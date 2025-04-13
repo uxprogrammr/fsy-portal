@@ -222,7 +222,7 @@ const Dashboard = () => {
         px: { xs: 2, sm: 3 },
         zIndex: 1000
       }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '36px' }}>
           <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Dashboard
           </Typography>
@@ -230,7 +230,7 @@ const Dashboard = () => {
             onClick={() => router.push('/profile')}
             sx={{ color: 'white' }}
           >
-            <AccountCircleIcon fontSize={isMobile ? "medium" : "large"} />
+            <AccountCircleIcon sx={{ fontSize: { xs: 32, sm: 40 } }} />
           </IconButton>
         </Box>
       </Box>
