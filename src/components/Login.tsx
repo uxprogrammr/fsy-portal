@@ -2,8 +2,20 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Container, TextField, Typography, Button, Checkbox, FormControlLabel } from '@mui/material';
+import { Box, TextField, Typography, Button, Checkbox, FormControlLabel, Alert } from '@mui/material';
 import Image from 'next/image';
+
+interface LoginResponse {
+  message: string;
+  user: {
+    id: number;
+    name: string;
+    type: string;
+    email: string;
+    phone: string;
+    birthDate: string;
+  };
+}
 
 export default function Login() {
   const router = useRouter();
@@ -12,10 +24,56 @@ export default function Login() {
     password: '',
     rememberMe: false
   });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [touched, setTouched] = useState({
+    username: false,
+    password: false
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/dashboard');
+    
+    // Validate required fields
+    if (!formData.username || !formData.password) {
+      setError('Username and password are required');
+      setTouched({ username: true, password: true });
+      return;
+    }
+
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      const loginData = data as LoginResponse;
+      
+      if (formData.rememberMe) {
+        localStorage.setItem('user', JSON.stringify(loginData.user));
+      }
+
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,6 +81,21 @@ export default function Login() {
     setFormData(prev => ({
       ...prev,
       [name]: name === 'rememberMe' ? checked : value
+    }));
+    
+    // Mark field as touched when user types
+    if (name !== 'rememberMe') {
+      setTouched(prev => ({
+        ...prev,
+        [name]: true
+      }));
+    }
+  };
+
+  const handleBlur = (field: 'username' | 'password') => {
+    setTouched(prev => ({
+      ...prev,
+      [field]: true
     }));
   };
 
@@ -50,8 +123,8 @@ export default function Login() {
             <Image
               src="/logo.png"
               alt="Look Unto Christ"
-              width={120}
-              height={120}
+              width={90}
+              height={90}
               priority
             />
           </Box>
@@ -60,13 +133,13 @@ export default function Login() {
           <Box sx={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            alignItems: 'center',
+            alignItems: 'center', 
             mb: 3
           }}>
             <Typography sx={{
               fontFamily: 'Inter',
               fontWeight: 900,
-              fontSize: { xs: '44px', sm: '48px' },
+              fontSize: { xs: '48px', sm: '56px' },
               lineHeight: 1,
               letterSpacing: '0.012em',
               color: '#006184',
@@ -79,7 +152,7 @@ export default function Login() {
             <Typography sx={{
               fontFamily: 'Inter',
               fontWeight: 500,
-              fontSize: { xs: '28px', sm: '32px' },
+              fontSize: { xs: '32px', sm: '40px' },
               lineHeight: 1.2,
               letterSpacing: '-0.012em',
               color: '#006184',
@@ -89,55 +162,66 @@ export default function Login() {
             </Typography>
           </Box>
 
+          {/* Error Alert */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
+              {error}
+            </Alert>
+          )}
+
           {/* Form */}
           <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
             {/* Username Field */}
             <Box sx={{ mb: 2 }}>
               <Typography sx={{ mb: 0.5, fontSize: '0.875rem' }}>
-                Username
+                Username *
               </Typography>
               <TextField
+                required
                 fullWidth
                 name="username"
                 placeholder="Email or Phone Number"
                 value={formData.username}
                 onChange={handleChange}
+                onBlur={() => handleBlur('username')}
+                error={touched.username && !formData.username}
+                helperText={touched.username && !formData.username ? 'Username is required' : 'Enter your email or phone number'}
                 variant="outlined"
                 size="small"
+                disabled={isLoading}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'white'
                   }
                 }}
               />
-              <Typography variant="caption" color="text.secondary">
-                Enter your username
-              </Typography>
             </Box>
 
             {/* Password Field */}
             <Box sx={{ mb: 2 }}>
               <Typography sx={{ mb: 0.5, fontSize: '0.875rem' }}>
-                Password
+                Password *
               </Typography>
               <TextField
+                required
                 fullWidth
                 name="password"
                 type="password"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
+                onBlur={() => handleBlur('password')}
+                error={touched.password && !formData.password}
+                helperText={touched.password && !formData.password ? 'Password is required' : 'Enter your password'}
                 variant="outlined"
                 size="small"
+                disabled={isLoading}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'white'
                   }
                 }}
               />
-              <Typography variant="caption" color="text.secondary">
-                Enter your password
-              </Typography>
             </Box>
 
             {/* Remember Me */}
@@ -148,6 +232,7 @@ export default function Login() {
                   checked={formData.rememberMe}
                   onChange={handleChange}
                   size="small"
+                  disabled={isLoading}
                 />
               }
               label={
@@ -163,6 +248,7 @@ export default function Login() {
               type="submit"
               fullWidth
               variant="contained"
+              disabled={isLoading}
               sx={{
                 bgcolor: '#006D91',
                 color: 'white',
@@ -174,7 +260,7 @@ export default function Login() {
                 }
               }}
             >
-              Login
+              {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </Box>
         </Box>
