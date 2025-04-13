@@ -145,20 +145,39 @@ const Profile = () => {
         color: 'white',
         py: { xs: 1.5, sm: 2 },
         px: { xs: 2, sm: 3 },
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
         zIndex: 1000
       }}>
-        <IconButton 
-          onClick={() => router.back()}
-          sx={{ color: 'white' }}
-        >
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-          Profile
-        </Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          height: '36px'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton 
+              onClick={() => router.back()}
+              sx={{ color: 'white' }}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+              Profile
+            </Typography>
+          </Box>
+          <Button
+            onClick={() => {
+              localStorage.removeItem('user');
+              router.push('/');
+            }}
+            sx={{ 
+              color: 'white',
+              textTransform: 'none',
+              fontSize: { xs: '0.875rem', sm: '1rem' }
+            }}
+          >
+            Sign Out
+          </Button>
+        </Box>
       </Box>
 
       {/* Scrollable Content */}
