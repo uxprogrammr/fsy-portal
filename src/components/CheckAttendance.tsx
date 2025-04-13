@@ -7,6 +7,16 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
+interface DailyEvent {
+  event_id: number;
+  event_name: string;
+  start_time: string;
+  end_time: string;
+  day_number: number;
+  company_id: number;
+  group_id: number;
+}
+
 interface Attendee {
   id: number;
   name: string;
@@ -27,6 +37,8 @@ const CheckAttendance = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [currentEvent, setCurrentEvent] = useState<DailyEvent | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Attendee[]>([
     { id: 1, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
     { id: 2, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
@@ -47,6 +59,22 @@ const CheckAttendance = () => {
   };
 
   useEffect(() => {
+    const fetchCurrentEvent = async () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const eventId = searchParams.get('event_id');
+        const response = await fetch(`/api/events/current${eventId ? `?event_id=${eventId}` : ''}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch event details');
+        }
+        const data = await response.json();
+        setCurrentEvent(data);
+      } catch (error) {
+        console.error('Error fetching event:', error);
+        setError('Failed to load event details');
+      }
+    };
+
     const checkAuth = () => {
       try {
         const savedUser = localStorage.getItem('user');
@@ -64,17 +92,8 @@ const CheckAttendance = () => {
           return;
         }
 
-        // Check if this is a temporary session
-        const isTemporary = sessionStorage.getItem('isTemporarySession');
-        if (isTemporary) {
-          console.log('Temporary session found');
-          setUser(userData);
-          return;
-        }
-
-        // For permanent sessions (Remember Me checked)
-        console.log('Permanent session found');
         setUser(userData);
+        fetchCurrentEvent(); // Fetch event details after authentication
       } catch (error) {
         console.error('Auth check error:', error);
         localStorage.removeItem('user');
@@ -104,6 +123,15 @@ const CheckAttendance = () => {
       </Box>
     );
   }
+
+  // Format time to 12-hour format
+  const formatTime = (time: string) => {
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    });
+  };
 
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden' }}>
@@ -143,20 +171,32 @@ const CheckAttendance = () => {
         <Container maxWidth="sm" sx={{ p: { xs: 2, sm: 3 } }}>
           {/* Event Info */}
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ fontSize: '1.25rem', mb: 1 }}>
-              Meet Your Counselor
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              1:30pm - 2:20pm
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Company 1
+            {error ? (
+              <Typography color="error" sx={{ mb: 2 }}>
+                {error}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Group 1
+            ) : currentEvent ? (
+              <>
+                <Typography variant="h6" sx={{ fontSize: '1.25rem', mb: 1 }}>
+                  {currentEvent.event_name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {formatTime(currentEvent.start_time)} - {formatTime(currentEvent.end_time)}
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Company {currentEvent.company_id}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Group {currentEvent.group_id}
+                  </Typography>
+                </Box>
+              </>
+            ) : (
+              <Typography color="text.secondary" sx={{ mb: 2 }}>
+                No active event at this time
               </Typography>
-            </Box>
+            )}
           </Box>
 
           {/* Stats */}

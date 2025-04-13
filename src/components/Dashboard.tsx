@@ -444,7 +444,9 @@ const Dashboard = () => {
             {filteredEvents.map((event) => (
               <Box
                 key={event.event_id}
+                onClick={() => router.push(`/check-attendance?event_id=${event.event_id}`)}
                 sx={{
+                  cursor: 'pointer',
                   bgcolor: 'white',
                   p: { xs: 1.5, sm: 2 },
                   mb: 1,
