@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, TextField, Typography, Button, Checkbox, FormControlLabel, Alert } from '@mui/material';
 import Image from 'next/image';
@@ -26,10 +26,32 @@ export default function Login() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [touched, setTouched] = useState({
     username: false,
     password: false
   });
+
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          if (userData.id && userData.type) {
+            router.push('/dashboard');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +86,20 @@ export default function Login() {
 
       const loginData = data as LoginResponse;
       
-      if (formData.rememberMe) {
-        localStorage.setItem('user', JSON.stringify(loginData.user));
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(loginData.user));
+
+      // If "Remember Me" is not checked, set up a session storage flag
+      if (!formData.rememberMe) {
+        sessionStorage.setItem('isTemporarySession', 'true');
       }
 
+      // Clear any existing session storage if "Remember Me" is checked
+      if (formData.rememberMe) {
+        sessionStorage.removeItem('isTemporarySession');
+      }
+
+      // Redirect to dashboard
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -98,6 +130,20 @@ export default function Login() {
       [field]: true
     }));
   };
+
+  if (isChecking) {
+    return (
+      <Box sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        bgcolor: '#F5F5F5'
+      }}>
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{

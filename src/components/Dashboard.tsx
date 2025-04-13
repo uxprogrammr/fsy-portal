@@ -1,14 +1,82 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import Fab from '@mui/material/Fab';
+import { useRouter } from 'next/navigation';
+
+interface User {
+  id: number;
+  name: string;
+  type: string;
+  email: string;
+  phone: string;
+  birthDate: string;
+}
 
 const Dashboard = () => {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const savedUser = localStorage.getItem('user');
+        if (!savedUser) {
+          console.log('No user data found in localStorage');
+          router.push('/');
+          return;
+        }
+
+        const userData = JSON.parse(savedUser) as User;
+        if (!userData.id || !userData.type) {
+          console.log('Invalid user data found');
+          localStorage.removeItem('user');
+          router.push('/');
+          return;
+        }
+
+        // Check if this is a temporary session
+        const isTemporary = sessionStorage.getItem('isTemporarySession');
+        if (isTemporary) {
+          console.log('Temporary session found');
+          setUser(userData);
+          return;
+        }
+
+        // For permanent sessions (Remember Me checked)
+        console.log('Permanent session found');
+        setUser(userData);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        localStorage.removeItem('user');
+        router.push('/');
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (isChecking) {
+    return (
+      <Box sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        bgcolor: '#F5F5F5'
+      }}>
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
 
   const events = [
     { name: 'Room Checks (if applicable)', time: '1:15pm - 1:30pm', status: 'cancelled' },

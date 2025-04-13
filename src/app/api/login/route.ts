@@ -3,51 +3,66 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 
-interface UserRow extends RowDataPacket {
-    user_id: number;
-    full_name: string;
-    user_type: 'Coordinator' | 'Counselor' | 'Participant';
-    email: string;
-    phone_number: string;
+interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+interface User {
+  id: number;
+  name: string;
+  type: string;
+  email: string;
+  phone: string;
+  birthDate: string;
+}
+
+interface LoginResponse {
+  success: boolean;
+  user?: User;
+  error?: string;
 }
 
 export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const { username, password } = body;
+  try {
+    const { username, password } = await request.json() as LoginRequest;
 
-        // Call the stored procedure
-        const sql = 'CALL check_user_login(?, ?)';
-        const results = await query(sql, [username, password]) as RowDataPacket[];
-        
-        // Stored procedure returns array of result sets, first element is our user array
-        const users = results[0] as UserRow[];
+    // Call the stored procedure to check user login
+    const sql = 'CALL check_user_login(?, ?)';
+    const results = await query(sql, [username, password]) as RowDataPacket[];
 
-        if (!users || users.length === 0) {
-            return NextResponse.json(
-                { error: 'Invalid credentials' },
-                { status: 401 }
-            );
-        }
+    // Stored procedure returns array of result sets, first element is our user array
+    const users = results[0] as RowDataPacket[];
 
-        const user = users[0];
-
-        return NextResponse.json({
-            message: 'Login successful',
-            user: {
-                id: user.user_id,
-                name: user.full_name,
-                type: user.user_type,
-                email: user.email,
-                phone: user.phone_number
-            }
-        });
-
-    } catch (error) {
-        console.error('Login error:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
+    if (!users || users.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid username or password' },
+        { status: 401 }
+      );
     }
+
+    const user = users[0];
+
+    // Return user data for localStorage
+    const userData: User = {
+      id: user.user_id,
+      name: user.full_name,
+      type: user.user_type,
+      email: user.email,
+      phone: user.phone_number,
+      birthDate: user.birth_date
+    };
+
+    return NextResponse.json({
+      success: true,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
