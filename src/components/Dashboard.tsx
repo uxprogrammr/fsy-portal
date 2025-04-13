@@ -226,7 +226,10 @@ const Dashboard = () => {
           <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Dashboard
           </Typography>
-          <IconButton sx={{ color: 'white' }}>
+          <IconButton 
+            onClick={() => router.push('/profile')}
+            sx={{ color: 'white' }}
+          >
             <AccountCircleIcon fontSize={isMobile ? "medium" : "large"} />
           </IconButton>
         </Box>
