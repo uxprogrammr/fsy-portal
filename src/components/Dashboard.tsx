@@ -97,6 +97,7 @@ const Dashboard = () => {
         fetchEvents();
       } catch (error) {
         console.error('Auth check error:', error);
+        // Only remove user data, not saved credentials
         localStorage.removeItem('user');
         router.push('/');
       } finally {

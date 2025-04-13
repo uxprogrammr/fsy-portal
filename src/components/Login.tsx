@@ -18,6 +18,19 @@ interface LoginResponse {
 }
 
 export default function Login() {
+  console.log('Login component rendering');
+  
+  // Direct check for localStorage
+  try {
+    const testKey = 'test_' + Date.now();
+    localStorage.setItem(testKey, 'test');
+    const testValue = localStorage.getItem(testKey);
+    localStorage.removeItem(testKey);
+    console.log('localStorage test successful:', testValue === 'test');
+  } catch (e) {
+    console.error('localStorage test failed:', e);
+  }
+  
   const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
@@ -32,16 +45,60 @@ export default function Login() {
     password: false
   });
 
+  // Load saved credentials when component mounts
   useEffect(() => {
-    const checkAuth = () => {
+    console.log('Login component mounted');
+    
+    try {
+      // Test localStorage access
+      console.log('Testing localStorage access');
+      localStorage.setItem('test', 'test');
+      localStorage.removeItem('test');
+      console.log('localStorage access successful');
+    } catch (e) {
+      console.error('localStorage access error:', e);
+    }
+    
+    const loadSavedCredentials = () => {
+      console.log('loadSavedCredentials function called');
       try {
+        // Check for saved user session
         const savedUser = localStorage.getItem('user');
+        console.log('Saved user from localStorage:', savedUser);
+        
         if (savedUser) {
           const userData = JSON.parse(savedUser);
           if (userData.id && userData.type) {
+            console.log('Valid user session found, redirecting to dashboard');
             router.push('/dashboard');
             return;
           }
+        }
+
+        // Check for saved credentials
+        const savedCredentials = localStorage.getItem('savedCredentials');
+        console.log('Checking for saved credentials...');
+        console.log('Raw savedCredentials from localStorage:', savedCredentials);
+        
+        if (savedCredentials) {
+          try {
+            const { username, password, rememberMe } = JSON.parse(savedCredentials);
+            console.log('Found saved credentials:', { username, rememberMe });
+            
+            // Always set the form data if we have saved credentials
+            console.log('Setting form data with saved credentials');
+            setFormData({
+              username,
+              password,
+              rememberMe: true
+            });
+            console.log('Form data updated with saved credentials');
+          } catch (parseError) {
+            console.error('Error parsing saved credentials:', parseError);
+            localStorage.removeItem('savedCredentials');
+          }
+        } else {
+          console.log('No saved credentials found in localStorage');
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -50,7 +107,7 @@ export default function Login() {
       }
     };
 
-    checkAuth();
+    loadSavedCredentials();
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +124,11 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      console.log('Submitting login form with data:', {
+        username: formData.username,
+        rememberMe: formData.rememberMe
+      });
+      
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -75,6 +137,7 @@ export default function Login() {
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
+          rememberMe: formData.rememberMe
         }),
       });
 
@@ -85,24 +148,36 @@ export default function Login() {
       }
 
       const loginData = data as LoginResponse;
+      console.log('Login successful, user data:', loginData.user);
       
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(loginData.user));
+      console.log('User data saved to localStorage');
 
-      // If "Remember Me" is not checked, set up a session storage flag
-      if (!formData.rememberMe) {
+      // Only store credentials after successful login if Remember Me is checked
+      if (formData.rememberMe) {
+        // Store credentials in localStorage
+        const credentialsToSave = {
+          username: formData.username,
+          password: formData.password,
+          rememberMe: true
+        };
+        console.log('Saving credentials to localStorage:', credentialsToSave);
+        localStorage.setItem('savedCredentials', JSON.stringify(credentialsToSave));
+        console.log('Credentials saved to localStorage');
+        sessionStorage.removeItem('isTemporarySession');
+      } else {
+        // Clear any existing saved credentials if Remember Me is unchecked
+        console.log('Remember Me not checked, clearing saved credentials');
+        localStorage.removeItem('savedCredentials');
         sessionStorage.setItem('isTemporarySession', 'true');
       }
 
-      // Clear any existing session storage if "Remember Me" is checked
-      if (formData.rememberMe) {
-        sessionStorage.removeItem('isTemporarySession');
-      }
-
-      // Redirect to dashboard
       router.push('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Login failed');
+      // Clear any existing saved credentials on login failure
+      localStorage.removeItem('savedCredentials');
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +189,11 @@ export default function Login() {
       ...prev,
       [name]: name === 'rememberMe' ? checked : value
     }));
+    
+    // If Remember Me is unchecked, clear saved credentials
+    if (name === 'rememberMe' && !checked) {
+      localStorage.removeItem('savedCredentials');
+    }
     
     // Mark field as touched when user types
     if (name !== 'rememberMe') {

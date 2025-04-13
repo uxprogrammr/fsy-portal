@@ -166,6 +166,7 @@ const Profile = () => {
           </Box>
           <Button
             onClick={() => {
+              // Only remove user data, not saved credentials
               localStorage.removeItem('user');
               router.push('/');
             }}

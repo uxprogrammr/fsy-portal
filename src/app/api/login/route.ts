@@ -2,10 +2,12 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { cookies } from 'next/headers';
 
 interface LoginRequest {
   username: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 interface User {
@@ -25,7 +27,7 @@ interface LoginResponse {
 
 export async function POST(request: Request) {
   try {
-    const { username, password } = await request.json() as LoginRequest;
+    const { username, password, rememberMe } = await request.json() as LoginRequest;
 
     // Call the stored procedure to check user login
     const sql = 'CALL check_user_login(?, ?)';
@@ -49,19 +51,29 @@ export async function POST(request: Request) {
       name: user.full_name,
       type: user.user_type,
       email: user.email,
-      phone: user.phone_number,
+      phone: user.phone,
       birthDate: user.birth_date
     };
 
-    return NextResponse.json({
+    // Create the response with the cookie
+    const response = NextResponse.json({
       success: true,
       user: userData
     });
 
+    // Set session cookie with appropriate expiration
+    response.cookies.set('session', JSON.stringify(userData), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60 // 30 days if remember me, 1 day if not
+    });
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'An error occurred during login' },
       { status: 500 }
     );
   }
