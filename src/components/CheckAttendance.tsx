@@ -33,11 +33,20 @@ interface User {
   birthDate: string;
 }
 
+interface UserCompanyGroup {
+  full_name: string;
+  company_name: string;
+  group_name: string;
+  total_counselor: number;
+  total_participant: number;
+}
+
 const CheckAttendance = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [currentEvent, setCurrentEvent] = useState<DailyEvent | null>(null);
+  const [userCompanyGroup, setUserCompanyGroup] = useState<UserCompanyGroup | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Attendee[]>([
     { id: 1, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
@@ -59,19 +68,45 @@ const CheckAttendance = () => {
   };
 
   useEffect(() => {
+    const fetchUserCompanyGroup = async (userId: number) => {
+      try {
+        const response = await fetch(`/api/user-info?userId=${userId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch user information');
+        }
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch user information');
+        }
+        setUserCompanyGroup(data.data);
+      } catch (error) {
+        console.error('Error fetching user information:', error);
+        setError('Failed to load user information');
+      }
+    };
+
     const fetchCurrentEvent = async () => {
       try {
         const searchParams = new URLSearchParams(window.location.search);
         const eventId = searchParams.get('event_id');
         const response = await fetch(`/api/events/current${eventId ? `?event_id=${eventId}` : ''}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch event details');
+        
+        if (response.status === 404) {
+          // This is not an error, just no current event
+          setCurrentEvent(null);
+          return;
         }
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch event details');
+        }
+        
         const data = await response.json();
         setCurrentEvent(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching event:', error);
-        setError('Failed to load event details');
+        setError(error.message || 'Failed to load event details');
       }
     };
 
@@ -93,7 +128,8 @@ const CheckAttendance = () => {
         }
 
         setUser(userData);
-        fetchCurrentEvent(); // Fetch event details after authentication
+        fetchUserCompanyGroup(userData.id);
+        fetchCurrentEvent();
       } catch (error) {
         console.error('Auth check error:', error);
         localStorage.removeItem('user');
@@ -120,6 +156,35 @@ const CheckAttendance = () => {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  // If no current event, show centered message
+  if (!currentEvent) {
+    return (
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        textAlign="center"
+        px={3}
+      >
+        <Typography variant="h6" color="text.secondary" gutterBottom>
+          No Active Event
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          There is no event scheduled for the current time.
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => router.back()}
+          sx={{ mt: 3 }}
+        >
+          Back to Dashboard
+        </Button>
       </Box>
     );
   }
@@ -183,14 +248,14 @@ const CheckAttendance = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {formatTime(currentEvent.start_time)} - {formatTime(currentEvent.end_time)}
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Company {currentEvent.company_id}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Group {currentEvent.group_id}
-                  </Typography>
-                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                {userCompanyGroup?.company_name || 'No Company'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {userCompanyGroup?.group_name || 'No Group'}
+              </Typography>
+            </Box>
               </>
             ) : (
               <Typography color="text.secondary" sx={{ mb: 2 }}>
