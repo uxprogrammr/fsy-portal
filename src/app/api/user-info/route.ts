@@ -6,7 +6,9 @@ interface UserInfoResponse {
   success: boolean;
   data?: {
     full_name: string;
+    company_id: number;
     company_name: string;
+    group_id: number;
     group_name: string;
     total_counselor: number;
     total_participant: number;
@@ -38,7 +40,9 @@ export async function GET(request: Request) {
       success: true,
       data: {
         full_name: userInfo.full_name,
+        company_id: userInfo.company_id,
         company_name: userInfo.company_name,
+        group_id: userInfo.group_id,
         group_name: userInfo.group_name,
         total_counselor: userInfo.total_counselor,
         total_participant: userInfo.total_participant

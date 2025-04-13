@@ -4,7 +4,7 @@ import { RowDataPacket } from 'mysql2';
 
 export interface DailyEvent extends RowDataPacket {
   event_id: number;
-  name: string;
+  event_name: string;
   start_time: string;
   end_time: string;
   day_number: number;

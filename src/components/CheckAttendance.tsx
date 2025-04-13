@@ -17,11 +17,27 @@ interface DailyEvent {
   group_id: number;
 }
 
-interface Attendee {
-  id: number;
-  name: string;
-  company: string;
-  status: 'present' | 'absent' | 'excused' | 'not-set';
+interface Participant {
+  fsy_id: number;
+  attendance_status: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  stake_name: string;
+  unit_name: string;
+  participant_type: string;
+  status: string;
+}
+
+interface UserCompanyGroup {
+  full_name: string;
+  company_id: number;
+  company_name: string;
+  group_id: number;
+  group_name: string;
+  total_counselor: number;
+  total_participant: number;
 }
 
 interface User {
@@ -33,55 +49,69 @@ interface User {
   birthDate: string;
 }
 
-interface UserCompanyGroup {
-  full_name: string;
-  company_name: string;
-  group_name: string;
-  total_counselor: number;
-  total_participant: number;
-}
-
 const CheckAttendance = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [currentEvent, setCurrentEvent] = useState<DailyEvent | null>(null);
   const [userCompanyGroup, setUserCompanyGroup] = useState<UserCompanyGroup | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [counselors, setCounselors] = useState<Participant[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<Attendee[]>([
-    { id: 1, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
-    { id: 2, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
-    { id: 3, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
-    { id: 4, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
-    { id: 5, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
-  ]);
-  const [counselors, setCounselors] = useState<Attendee[]>([
-    { id: 6, name: 'Juan D.', company: 'Kalibo / Altavas', status: 'present' },
-    { id: 7, name: 'John Rey B.', company: 'Kalibo / Altavas', status: 'not-set' },
-  ]);
 
   const stats = {
-    present: participants.filter(p => p.status === 'present').length,
-    absent: participants.filter(p => p.status === 'absent').length,
-    excused: participants.filter(p => p.status === 'excused').length,
-    notSet: participants.filter(p => p.status === 'not-set').length,
+    present: participants.filter(p => p.attendance_status === 'Present').length,
+    absent: participants.filter(p => p.attendance_status === 'Absent').length,
+    excused: participants.filter(p => p.attendance_status === 'Excused').length,
+    notSet: participants.filter(p => !['Present', 'Absent', 'Excused'].includes(p.attendance_status)).length,
+  };
+
+  const fetchParticipants = async (eventId: number, companyId: number, groupId: number) => {
+    try {
+      console.log('Fetching participants with:', { eventId, companyId, groupId });
+      const response = await fetch(`/api/participants?event_id=${eventId}&company_id=${companyId}&group_id=${groupId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Participants API error:', errorData);
+        throw new Error('Failed to fetch participants');
+      }
+      const data = await response.json();
+      console.log('Participants data:', data);
+      console.log('Number of participants:', data.participants?.length || 0);
+      console.log('Number of counselors:', data.counselors?.length || 0);
+      setParticipants(data.participants || []);
+      setCounselors(data.counselors || []);
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      setError('Failed to load participants');
+    }
   };
 
   useEffect(() => {
     const fetchUserCompanyGroup = async (userId: number) => {
       try {
+        console.log('Fetching user info for ID:', userId);
         const response = await fetch(`/api/user-info?userId=${userId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch user information');
         }
         const data = await response.json();
+        console.log('User info data:', data);
         if (!data.success) {
           throw new Error(data.error || 'Failed to fetch user information');
         }
+        console.log('User company/group data:', {
+          company_id: data.data.company_id,
+          group_id: data.data.group_id,
+          company_name: data.data.company_name,
+          group_name: data.data.group_name
+        });
         setUserCompanyGroup(data.data);
+        return data.data;
       } catch (error) {
         console.error('Error fetching user information:', error);
         setError('Failed to load user information');
+        return null;
       }
     };
 
@@ -89,28 +119,30 @@ const CheckAttendance = () => {
       try {
         const searchParams = new URLSearchParams(window.location.search);
         const eventId = searchParams.get('event_id');
+        console.log('Fetching event with ID:', eventId);
         const response = await fetch(`/api/events/current${eventId ? `?event_id=${eventId}` : ''}`);
         
         if (response.status === 404) {
-          // This is not an error, just no current event
+          console.log('No current event found');
           setCurrentEvent(null);
-          return;
+          return null;
         }
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch event details');
+          throw new Error('Failed to fetch event details');
         }
-        
         const data = await response.json();
+        console.log('Event data:', data);
         setCurrentEvent(data);
-      } catch (error: any) {
+        return data;
+      } catch (error) {
         console.error('Error fetching event:', error);
-        setError(error.message || 'Failed to load event details');
+        setError('Failed to load event details');
+        return null;
       }
     };
 
-    const checkAuth = () => {
+    const initializeData = async () => {
       try {
         const savedUser = localStorage.getItem('user');
         if (!savedUser) {
@@ -120,6 +152,7 @@ const CheckAttendance = () => {
         }
 
         const userData = JSON.parse(savedUser);
+        console.log('User data from localStorage:', userData);
         if (!userData.id || !userData.type) {
           console.log('Invalid user data found');
           localStorage.removeItem('user');
@@ -128,28 +161,109 @@ const CheckAttendance = () => {
         }
 
         setUser(userData);
-        fetchUserCompanyGroup(userData.id);
-        fetchCurrentEvent();
+        
+        // Fetch user company/group and event details
+        const [userInfo, eventData] = await Promise.all([
+          fetchUserCompanyGroup(userData.id),
+          fetchCurrentEvent()
+        ]);
+
+        console.log('Fetched data:', { userInfo, eventData });
+
+        // If we have both user info and event data, fetch participants
+        if (userInfo && eventData && userInfo.company_id && userInfo.group_id) {
+          console.log('Fetching participants with IDs:', {
+            eventId: eventData.event_id,
+            companyId: userInfo.company_id,
+            groupId: userInfo.group_id
+          });
+          await fetchParticipants(eventData.event_id, userInfo.company_id, userInfo.group_id);
+        } else {
+          console.log('Missing required data for participants:', { userInfo, eventData });
+        }
       } catch (error) {
-        console.error('Auth check error:', error);
-        localStorage.removeItem('user');
-        router.push('/');
+        console.error('Error initializing data:', error);
+        setError('Failed to initialize data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuth();
+    initializeData();
   }, [router]);
 
+  const handleAttendanceUpdate = async (participantId: number, status: string) => {
+    try {
+      if (!currentEvent) return;
+      
+      const response = await fetch('/api/attendance/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fsy_id: participantId,
+          event_id: currentEvent.event_id,
+          status: status
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update attendance');
+      }
+
+      // Update local state
+      setParticipants(participants.map(p => 
+        p.fsy_id === participantId ? { ...p, attendance_status: status } : p
+      ));
+
+      // Show success message or toast here if needed
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      setError('Failed to update attendance status');
+    }
+  };
+
+  const handleBulkAttendanceUpdate = async (status: string) => {
+    try {
+      if (!currentEvent) return;
+      
+      const response = await fetch('/api/attendance/bulk-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event_id: currentEvent.event_id,
+          company_id: userCompanyGroup?.company_id,
+          group_id: userCompanyGroup?.group_id,
+          status: status
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update attendance');
+      }
+
+      // Update local state
+      setParticipants(participants.map(p => ({ ...p, attendance_status: status })));
+      setCounselors(counselors.map(c => ({ ...c, attendance_status: status })));
+
+      // Show success message or toast here if needed
+    } catch (error) {
+      console.error('Error updating bulk attendance:', error);
+      setError('Failed to update attendance status');
+    }
+  };
+
   const handleClearAll = () => {
-    setParticipants(participants.map(p => ({ ...p, status: 'not-set' })));
-    setCounselors(counselors.map(c => ({ ...c, status: 'not-set' })));
+    handleBulkAttendanceUpdate('Not Set');
   };
 
   const handleAllPresent = () => {
-    setParticipants(participants.map(p => ({ ...p, status: 'present' })));
-    setCounselors(counselors.map(c => ({ ...c, status: 'present' })));
+    handleBulkAttendanceUpdate('Present');
   };
 
   if (isLoading) {
@@ -249,19 +363,15 @@ const CheckAttendance = () => {
                   {formatTime(currentEvent.start_time)} - {formatTime(currentEvent.end_time)}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                {userCompanyGroup?.company_name || 'No Company'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {userCompanyGroup?.group_name || 'No Group'}
-              </Typography>
-            </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {userCompanyGroup?.company_name || 'No Company'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {userCompanyGroup?.group_name || 'No Group'}
+                  </Typography>
+                </Box>
               </>
-            ) : (
-              <Typography color="text.secondary" sx={{ mb: 2 }}>
-                No active event at this time
-              </Typography>
-            )}
+            ) : null}
           </Box>
 
           {/* Stats */}
@@ -300,7 +410,7 @@ const CheckAttendance = () => {
               alignItems: 'center',
               mb: 2
             }}>
-              <Typography variant="h6">Participants</Typography>
+              <Typography variant="h6">Participants ({participants.length})</Typography>
               <Box>
                 <Button 
                   size="small" 
@@ -325,7 +435,7 @@ const CheckAttendance = () => {
             </Box>
             {participants.map((participant) => (
               <Box
-                key={participant.id}
+                key={participant.fsy_id}
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -337,39 +447,59 @@ const CheckAttendance = () => {
                 }}
               >
                 <Box>
-                  <Typography>{participant.name}</Typography>
+                  <Typography>{`${participant.first_name} ${participant.last_name}`}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {participant.company}
+                    {participant.unit_name}
                   </Typography>
                 </Box>
-                {participant.status === 'present' ? (
-                  <Box sx={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: '50%', 
-                    bgcolor: '#4CAF50',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white'
-                  }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <IconButton 
+                    onClick={() => handleAttendanceUpdate(participant.fsy_id, 'Present')}
+                    sx={{ 
+                      color: participant.attendance_status === 'Present' ? 'white' : 'inherit',
+                      bgcolor: participant.attendance_status === 'Present' ? 'success.main' : 'transparent',
+                      '&:hover': {
+                        bgcolor: participant.attendance_status === 'Present' ? 'success.dark' : 'action.hover'
+                      }
+                    }}
+                  >
                     <Typography>P</Typography>
-                  </Box>
-                ) : (
-                  <IconButton>
-                    <AddCircleOutlineIcon />
                   </IconButton>
-                )}
+                  <IconButton 
+                    onClick={() => handleAttendanceUpdate(participant.fsy_id, 'Absent')}
+                    sx={{ 
+                      color: participant.attendance_status === 'Absent' ? 'white' : 'inherit',
+                      bgcolor: participant.attendance_status === 'Absent' ? 'error.main' : 'transparent',
+                      '&:hover': {
+                        bgcolor: participant.attendance_status === 'Absent' ? 'error.dark' : 'action.hover'
+                      }
+                    }}
+                  >
+                    <Typography>A</Typography>
+                  </IconButton>
+                  <IconButton 
+                    onClick={() => handleAttendanceUpdate(participant.fsy_id, 'Excused')}
+                    sx={{ 
+                      color: participant.attendance_status === 'Excused' ? 'white' : 'inherit',
+                      bgcolor: participant.attendance_status === 'Excused' ? 'warning.main' : 'transparent',
+                      '&:hover': {
+                        bgcolor: participant.attendance_status === 'Excused' ? 'warning.dark' : 'action.hover'
+                      }
+                    }}
+                  >
+                    <Typography>E</Typography>
+                  </IconButton>
+                </Box>
               </Box>
             ))}
           </Box>
 
           {/* Counselors Section */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Counselors</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>Counselors ({counselors.length})</Typography>
             {counselors.map((counselor) => (
               <Box
-                key={counselor.id}
+                key={counselor.fsy_id}
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -381,12 +511,12 @@ const CheckAttendance = () => {
                 }}
               >
                 <Box>
-                  <Typography>{counselor.name}</Typography>
+                  <Typography>{`${counselor.first_name} ${counselor.last_name}`}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {counselor.company}
+                    {counselor.unit_name}
                   </Typography>
                 </Box>
-                {counselor.status === 'present' ? (
+                {counselor.attendance_status === 'Present' ? (
                   <Box sx={{ 
                     width: 32, 
                     height: 32, 
