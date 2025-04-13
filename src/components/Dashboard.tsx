@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import QrCodeIcon from '@mui/icons-material/QrCode';
+import Fab from '@mui/material/Fab';
 
 const Dashboard = () => {
   const theme = useTheme();
@@ -18,7 +20,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <Box sx={{ height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ height: '100vh', overflow: 'hidden', position: 'relative' }}>
       {/* Fixed Header */}
       <Box sx={{ 
         position: 'fixed',
@@ -46,9 +48,9 @@ const Dashboard = () => {
         sx={{ 
           height: '100%',
           overflow: 'auto',
-          bgcolor: '#f5f5f5',
           pt: { xs: '64px', sm: '80px' },
-          pb: { xs: 3, sm: 4 }
+          pb: { xs: 3, sm: 4 },
+          bgcolor: '#f5f5f5'
         }}
       >
         <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
@@ -244,6 +246,24 @@ const Dashboard = () => {
           </Box>
         </Container>
       </Box>
+
+      {/* Floating Action Button */}
+      <Fab 
+        color="primary" 
+        aria-label="qr-code"
+        sx={{
+          position: 'fixed',
+          bottom: { xs: 16, sm: 32 },
+          right: { xs: 16, sm: 32 },
+          bgcolor: '#006D91',
+          '&:hover': {
+            bgcolor: '#005d7a'
+          },
+          zIndex: 1000
+        }}
+      >
+        <QrCodeIcon />
+      </Fab>
     </Box>
   );
 };
