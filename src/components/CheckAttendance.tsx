@@ -555,6 +555,7 @@ const CheckAttendance = () => {
               bgcolor: '#006D91',
               color: 'white',
               py: { xs: 1.5, sm: 2 },
+              mb: { xs: 4, sm: 6 },
               '&:hover': {
                 bgcolor: '#005d7a'
               }
@@ -562,6 +563,9 @@ const CheckAttendance = () => {
           >
             Submit Attendance
           </Button>
+          
+          {/* Added extra space at the bottom */}
+          <Box sx={{ height: { xs: 60, sm: 80 } }} />
         </Container>
       </Box>
 
@@ -570,7 +574,7 @@ const CheckAttendance = () => {
         open={snackbar.open} 
         autoHideDuration={6000} 
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 
