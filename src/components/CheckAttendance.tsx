@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, Container, Divider, Paper, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, IconButton, Container, Divider, Paper, CircularProgress, Snackbar, Alert } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -58,6 +61,15 @@ const CheckAttendance = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [counselors, setCounselors] = useState<Participant[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   const stats = {
     present: participants.filter(p => p.attendance_status === 'Present').length,
@@ -192,44 +204,65 @@ const CheckAttendance = () => {
     initializeData();
   }, [router]);
 
-  const handleAttendanceUpdate = async (participantId: number, status: string) => {
-    try {
-      if (!currentEvent) return;
-      
-      const response = await fetch('/api/attendance/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fsy_id: participantId,
-          event_id: currentEvent.event_id,
-          status: status
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update attendance');
-      }
-
-      // Update local state
-      setParticipants(participants.map(p => 
-        p.fsy_id === participantId ? { ...p, attendance_status: status } : p
-      ));
-
-      // Show success message or toast here if needed
-    } catch (error) {
-      console.error('Error updating attendance:', error);
-      setError('Failed to update attendance status');
+  const getAttendanceIcon = (status: string) => {
+    switch (status) {
+      case 'Present':
+        return <CheckCircleOutlineIcon sx={{ color: 'success.main' }} />;
+      case 'Absent':
+        return <CancelOutlinedIcon sx={{ color: 'error.main' }} />;
+      case 'Excused':
+        return <BlockOutlinedIcon sx={{ color: 'warning.main' }} />;
+      default:
+        return <AddCircleOutlineIcon sx={{ color: 'text.secondary' }} />;
     }
   };
 
-  const handleBulkAttendanceUpdate = async (status: string) => {
+  const getNextStatus = (currentStatus: string): string => {
+    switch (currentStatus) {
+      case 'Not Set':
+        return 'Present';
+      case 'Present':
+        return 'Absent';
+      case 'Absent':
+        return 'Excused';
+      case 'Excused':
+        return 'Not Set';
+      default:
+        return 'Not Set';
+    }
+  };
+
+  const handleAttendanceClick = (participantId: number, currentStatus: string) => {
+    const newStatus = getNextStatus(currentStatus);
+    
+    // Update local state only
+    setParticipants(participants.map(p => 
+      p.fsy_id === participantId ? { ...p, attendance_status: newStatus } : p
+    ));
+    
+    // Also update counselors if needed
+    setCounselors(counselors.map(c => 
+      c.fsy_id === participantId ? { ...c, attendance_status: newStatus } : c
+    ));
+  };
+
+  const handleClearAll = () => {
+    // Update local state only
+    setParticipants(participants.map(p => ({ ...p, attendance_status: 'Not Set' })));
+    setCounselors(counselors.map(c => ({ ...c, attendance_status: 'Not Set' })));
+  };
+
+  const handleAllPresent = () => {
+    // Update local state only
+    setParticipants(participants.map(p => ({ ...p, attendance_status: 'Present' })));
+    setCounselors(counselors.map(c => ({ ...c, attendance_status: 'Present' })));
+  };
+
+  const handleSubmitAttendance = async () => {
     try {
       if (!currentEvent) return;
-      
-      const response = await fetch('/api/attendance/bulk-update', {
+
+      const response = await fetch('/api/attendance/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -238,32 +271,43 @@ const CheckAttendance = () => {
           event_id: currentEvent.event_id,
           company_id: userCompanyGroup?.company_id,
           group_id: userCompanyGroup?.group_id,
-          status: status
+          participants: participants.map(p => ({
+            fsy_id: p.fsy_id,
+            attendance_status: p.attendance_status
+          })),
+          counselors: counselors.map(c => ({
+            fsy_id: c.fsy_id,
+            attendance_status: c.attendance_status
+          }))
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update attendance');
+        throw new Error(errorData.error || 'Failed to submit attendance');
       }
 
-      // Update local state
-      setParticipants(participants.map(p => ({ ...p, attendance_status: status })));
-      setCounselors(counselors.map(c => ({ ...c, attendance_status: status })));
-
-      // Show success message or toast here if needed
+      // Show success toast
+      setSnackbar({
+        open: true,
+        message: 'Attendance submitted successfully',
+        severity: 'success'
+      });
     } catch (error) {
-      console.error('Error updating bulk attendance:', error);
-      setError('Failed to update attendance status');
+      console.error('Error submitting attendance:', error);
+      setError('Failed to submit attendance');
+      
+      // Show error toast
+      setSnackbar({
+        open: true,
+        message: 'Failed to submit attendance',
+        severity: 'error'
+      });
     }
   };
 
-  const handleClearAll = () => {
-    handleBulkAttendanceUpdate('Not Set');
-  };
-
-  const handleAllPresent = () => {
-    handleBulkAttendanceUpdate('Present');
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   if (isLoading) {
@@ -452,44 +496,16 @@ const CheckAttendance = () => {
                     {participant.unit_name}
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <IconButton 
-                    onClick={() => handleAttendanceUpdate(participant.fsy_id, 'Present')}
-                    sx={{ 
-                      color: participant.attendance_status === 'Present' ? 'white' : 'inherit',
-                      bgcolor: participant.attendance_status === 'Present' ? 'success.main' : 'transparent',
-                      '&:hover': {
-                        bgcolor: participant.attendance_status === 'Present' ? 'success.dark' : 'action.hover'
-                      }
-                    }}
-                  >
-                    <Typography>P</Typography>
-                  </IconButton>
-                  <IconButton 
-                    onClick={() => handleAttendanceUpdate(participant.fsy_id, 'Absent')}
-                    sx={{ 
-                      color: participant.attendance_status === 'Absent' ? 'white' : 'inherit',
-                      bgcolor: participant.attendance_status === 'Absent' ? 'error.main' : 'transparent',
-                      '&:hover': {
-                        bgcolor: participant.attendance_status === 'Absent' ? 'error.dark' : 'action.hover'
-                      }
-                    }}
-                  >
-                    <Typography>A</Typography>
-                  </IconButton>
-                  <IconButton 
-                    onClick={() => handleAttendanceUpdate(participant.fsy_id, 'Excused')}
-                    sx={{ 
-                      color: participant.attendance_status === 'Excused' ? 'white' : 'inherit',
-                      bgcolor: participant.attendance_status === 'Excused' ? 'warning.main' : 'transparent',
-                      '&:hover': {
-                        bgcolor: participant.attendance_status === 'Excused' ? 'warning.dark' : 'action.hover'
-                      }
-                    }}
-                  >
-                    <Typography>E</Typography>
-                  </IconButton>
-                </Box>
+                <IconButton 
+                  onClick={() => handleAttendanceClick(participant.fsy_id, participant.attendance_status)}
+                  sx={{ 
+                    '&:hover': {
+                      bgcolor: 'action.hover'
+                    }
+                  }}
+                >
+                  {getAttendanceIcon(participant.attendance_status)}
+                </IconButton>
               </Box>
             ))}
           </Box>
@@ -516,24 +532,16 @@ const CheckAttendance = () => {
                     {counselor.unit_name}
                   </Typography>
                 </Box>
-                {counselor.attendance_status === 'Present' ? (
-                  <Box sx={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: '50%', 
-                    bgcolor: '#4CAF50',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white'
-                  }}>
-                    <Typography>P</Typography>
-                  </Box>
-                ) : (
-                  <IconButton>
-                    <AddCircleOutlineIcon />
-                  </IconButton>
-                )}
+                <IconButton 
+                  onClick={() => handleAttendanceClick(counselor.fsy_id, counselor.attendance_status)}
+                  sx={{ 
+                    '&:hover': {
+                      bgcolor: 'action.hover'
+                    }
+                  }}
+                >
+                  {getAttendanceIcon(counselor.attendance_status)}
+                </IconButton>
               </Box>
             ))}
           </Box>
@@ -542,6 +550,7 @@ const CheckAttendance = () => {
           <Button
             fullWidth
             variant="contained"
+            onClick={handleSubmitAttendance}
             sx={{
               bgcolor: '#006D91',
               color: 'white',
@@ -555,6 +564,22 @@ const CheckAttendance = () => {
           </Button>
         </Container>
       </Box>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
