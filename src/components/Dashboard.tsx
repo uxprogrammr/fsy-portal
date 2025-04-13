@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge } from '@mui/material';
+import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge, Switch, FormControlLabel } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import Fab from '@mui/material/Fab';
@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [showPastEvents, setShowPastEvents] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -121,6 +122,11 @@ const Dashboard = () => {
       console.error('Error fetching events:', error);
     }
   };
+
+  // Filter events based on showPastEvents state
+  const filteredEvents = events.filter(event => 
+    showPastEvents || event.status !== 'past'
+  );
 
   if (isChecking || isLoading) {
     return (
@@ -294,13 +300,31 @@ const Dashboard = () => {
               alignItems: 'center', 
               mb: { xs: 1.5, sm: 2 } 
             }}>
-              <Typography 
-                variant="h5" 
-                component="h2"
-                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
-              >
-                Events
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography 
+                  variant="h5" 
+                  component="h2"
+                  sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' }, mr: 2 }}
+                >
+                  Events
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showPastEvents}
+                      onChange={(e) => setShowPastEvents(e.target.checked)}
+                      size="small"
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      Show Past
+                    </Typography>
+                  }
+                  sx={{ ml: 1 }}
+                />
+              </Box>
               <Typography 
                 variant="h6" 
                 color="text.secondary"
@@ -310,7 +334,7 @@ const Dashboard = () => {
               </Typography>
             </Box>
 
-            {events.map((event) => (
+            {filteredEvents.map((event) => (
               <Box
                 key={event.event_id}
                 sx={{
