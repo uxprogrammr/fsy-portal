@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
@@ -27,15 +26,14 @@ export async function POST(request: Request) {
 
     // Add phone if provided
     if (phone) {
-      updateFields.push(' phone = ?');
+      updateFields.push(' phone_number = ?');
       values.push(phone);
     }
 
-    // Add password if provided
+    // Add password if provided using SHA2 256
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateFields.push(' password_hash = ?');
-      values.push(hashedPassword);
+      updateFields.push(' password_hash = SHA2(?, 256)');
+      values.push(password);
     }
 
     // If no fields to update, return error
@@ -47,13 +45,20 @@ export async function POST(request: Request) {
     }
 
     // Complete the SQL query
-    sql += updateFields.join(',') + ' WHERE id = ?';
+    sql += updateFields.join(',') + ' WHERE user_id = ?';
     values.push(userId);
 
-    // Execute the update query
-    await query(sql, values);
+    console.log('SQL Query:', sql);
+    console.log('Values:', values);
 
-    return NextResponse.json({ success: true });
+    // Execute the update query
+    const result = await query(sql, values);
+    console.log('Query Result:', result);
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Profile updated successfully'
+    });
   } catch (error) {
     console.error('Error updating profile:', error);
     return NextResponse.json(

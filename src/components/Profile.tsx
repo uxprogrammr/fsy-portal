@@ -91,9 +91,9 @@ const Profile = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
-          phone: formData.phone,
-          ...(formData.password && { password: formData.password }),
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          password: formData.password || undefined,
           userId: userData.id
         }),
       });
@@ -108,7 +108,7 @@ const Profile = () => {
       localStorage.setItem('user', JSON.stringify({
         ...userData,
         email: formData.email,
-        phone: formData.phone
+        phone: formData.phone,
       }));
 
       setSnackbar({
@@ -235,6 +235,10 @@ const Profile = () => {
                   placeholder="Enter your password"
                   helperText="Password must be at least 6 characters"
                   error={formData.password.length > 0 && formData.password.length < 6}
+                  autoComplete="new-password"
+                  inputProps={{
+                    autoComplete: 'new-password'
+                  }}
                 />
               </Box>
               <TextField
@@ -246,6 +250,10 @@ const Profile = () => {
                 placeholder="Re-enter your password"
                 error={formData.retypePassword.length > 0 && formData.password !== formData.retypePassword}
                 helperText={formData.retypePassword.length > 0 && formData.password !== formData.retypePassword ? "Passwords do not match" : ""}
+                autoComplete="new-password"
+                inputProps={{
+                  autoComplete: 'new-password'
+                }}
               />
             </Box>
 
