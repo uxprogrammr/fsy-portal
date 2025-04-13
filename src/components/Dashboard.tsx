@@ -384,6 +384,7 @@ const Dashboard = () => {
           <Button
             fullWidth
             variant="contained"
+            onClick={() => router.push('/check-attendance')}
             sx={{
               bgcolor: '#006D91',
               color: 'white',
