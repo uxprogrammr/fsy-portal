@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge, Switch, FormControlLabel } from '@mui/material';
+import React, { useEffect, useState, useRef } from 'react';
+import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge, Switch, FormControlLabel, CircularProgress } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import Fab from '@mui/material/Fab';
@@ -43,8 +43,15 @@ const Dashboard = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [showPastEvents, setShowPastEvents] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
+  const currentY = useRef(0);
+  const isDragging = useRef(false);
+  const refreshThreshold = 100; // pixels to trigger refresh
 
   useEffect(() => {
     const checkAuth = () => {
@@ -128,6 +135,56 @@ const Dashboard = () => {
     showPastEvents || event.status !== 'past'
   );
 
+  // Handle touch/mouse events for pull-to-refresh
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    // Only handle if we're at the top of the scroll container
+    if (scrollContainerRef.current?.scrollTop === 0) {
+      isDragging.current = true;
+      startY.current = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      currentY.current = startY.current;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isDragging.current) return;
+    
+    currentY.current = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const distance = Math.max(0, currentY.current - startY.current);
+    
+    // Only allow pulling down when at the top
+    if (scrollContainerRef.current?.scrollTop === 0) {
+      setPullDistance(distance);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging.current) return;
+    
+    isDragging.current = false;
+    
+    // If pulled down enough, refresh
+    if (pullDistance > refreshThreshold) {
+      refreshData();
+    }
+    
+    // Reset pull distance
+    setPullDistance(0);
+  };
+
+  // Refresh data function
+  const refreshData = () => {
+    if (isRefreshing || !user?.id) return;
+    
+    setIsRefreshing(true);
+    fetchUserInfo(user.id);
+    fetchEvents();
+    
+    // Reset refreshing state after a delay
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
+
   if (isChecking || isLoading) {
     return (
       <Box sx={{
@@ -166,15 +223,52 @@ const Dashboard = () => {
         </Box>
       </Box>
 
+      {/* Pull-to-refresh indicator */}
+      {pullDistance > 0 && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: { xs: '64px', sm: '80px' },
+            left: 0,
+            right: 0,
+            height: pullDistance,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            bgcolor: 'rgba(0, 188, 212, 0.1)',
+            zIndex: 900,
+            transition: 'height 0.2s ease-out'
+          }}
+        >
+          {pullDistance > refreshThreshold ? (
+            <Typography color="primary" sx={{ fontSize: '0.875rem' }}>
+              Release to refresh
+            </Typography>
+          ) : (
+            <CircularProgress size={20} color="primary" />
+          )}
+        </Box>
+      )}
+
       {/* Scrollable Content */}
       <Box 
+        ref={scrollContainerRef}
         sx={{ 
           height: '100%',
           overflow: 'auto',
           pt: { xs: '64px', sm: '80px' },
           pb: { xs: 3, sm: 4 },
-          bgcolor: '#f5f5f5'
+          bgcolor: '#f5f5f5',
+          transform: `translateY(${pullDistance}px)`,
+          transition: pullDistance === 0 ? 'transform 0.2s ease-out' : 'none'
         }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleTouchStart}
+        onMouseMove={handleTouchMove}
+        onMouseUp={handleTouchEnd}
+        onMouseLeave={handleTouchEnd}
       >
         <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
           {/* User Info */}
