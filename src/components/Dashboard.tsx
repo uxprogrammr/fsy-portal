@@ -24,12 +24,24 @@ interface UserInfo {
   total_participant: number;
 }
 
+interface Event {
+  event_id: number;
+  event_name: string;
+  day_number: number;
+  start_time: string;
+  end_time: string;
+  description: string | null;
+  attendance_required: string;
+  status: 'past' | 'ongoing' | 'upcoming';
+}
+
 const Dashboard = () => {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -57,6 +69,7 @@ const Dashboard = () => {
           console.log('Temporary session found');
           setUser(userData);
           fetchUserInfo(userData.id);
+          fetchEvents();
           return;
         }
 
@@ -64,6 +77,7 @@ const Dashboard = () => {
         console.log('Permanent session found');
         setUser(userData);
         fetchUserInfo(userData.id);
+        fetchEvents();
       } catch (error) {
         console.error('Auth check error:', error);
         localStorage.removeItem('user');
@@ -93,6 +107,21 @@ const Dashboard = () => {
     }
   };
 
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch('/api/events');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch events');
+      }
+      
+      setEvents(data.data);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
   if (isChecking || isLoading) {
     return (
       <Box sx={{
@@ -106,15 +135,6 @@ const Dashboard = () => {
       </Box>
     );
   }
-
-  const events = [
-    { name: 'Room Checks (if applicable)', time: '1:15pm - 1:30pm', status: 'cancelled' },
-    { name: 'Meet Your Counselor', time: '1:30pm - 2:20pm', status: 'ongoing' },
-    { name: 'Meet Your Company', time: '2:30pm - 3:05pm', status: 'upcoming' },
-    { name: 'Company Name and Chant', time: '3:05pm - 3:15pm', status: 'upcoming' },
-    { name: 'Orientation', time: '3:30pm - 4:30pm', status: 'upcoming' },
-    { name: 'Dinner', time: '4:45pm - 5:45pm', status: 'upcoming' },
-  ];
 
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden', position: 'relative' }}>
@@ -286,20 +306,20 @@ const Dashboard = () => {
                 color="text.secondary"
                 sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
               >
-                Day 1
+                Day {events[0]?.day_number || 1}
               </Typography>
             </Box>
 
-            {events.map((event, index) => (
+            {events.map((event) => (
               <Box
-                key={index}
+                key={event.event_id}
                 sx={{
                   bgcolor: 'white',
                   p: { xs: 1.5, sm: 2 },
                   mb: 1,
                   borderRadius: 2,
                   position: 'relative',
-                  textDecoration: event.status === 'cancelled' ? 'line-through' : 'none',
+                  textDecoration: event.status === 'past' ? 'line-through' : 'none',
                 }}
               >
                 <Typography 
@@ -311,14 +331,14 @@ const Dashboard = () => {
                     pr: event.status === 'ongoing' ? { xs: '80px', sm: '100px' } : 0
                   }}
                 >
-                  {event.name}
+                  {event.event_name}
                 </Typography>
                 <Typography 
                   variant="body2" 
                   color="text.secondary"
                   sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                 >
-                  {event.time}
+                  {event.start_time} - {event.end_time}
                 </Typography>
                 {event.status === 'ongoing' && (
                   <Box
