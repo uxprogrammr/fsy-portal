@@ -148,15 +148,28 @@ export default function Login() {
   return (
     <Box sx={{
       minHeight: '100vh',
+      height: '100%',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      bgcolor: '#F5F5F5'
+      bgcolor: '#F5F5F5',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'auto',
+      pt: { xs: 0, sm: 0 }
     }}>
       <Box sx={{ 
         width: { xs: '100%', sm: '400px' },
         mx: 'auto',
-        p: { xs: 2, sm: 3 }
+        p: { xs: 1, sm: 2 },
+        px: { xs: 3, sm: 4 },
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        mt: { xs: -4, sm: 0 }
       }}>
         <Box sx={{
           display: 'flex',
@@ -165,12 +178,12 @@ export default function Login() {
           width: '100%'
         }}>
           {/* Logo */}
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 1 }}>
             <Image
               src="/logo.png"
               alt="Look Unto Christ"
-              width={90}
-              height={90}
+              width={120}
+              height={120}
               priority
             />
           </Box>
@@ -180,7 +193,7 @@ export default function Login() {
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center', 
-            mb: 3
+            mb: 2
           }}>
             <Typography sx={{
               fontFamily: 'Inter',
@@ -216,7 +229,7 @@ export default function Login() {
           )}
 
           {/* Form */}
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', height: '100%', marginBottom: '50px' }}>
             {/* Username Field */}
             <Box sx={{ mb: 2 }}>
               <Typography sx={{ mb: 0.5, fontSize: '0.875rem' }}>
