@@ -16,10 +16,20 @@ interface User {
   birthDate: string;
 }
 
+interface UserInfo {
+  full_name: string;
+  company_name: string;
+  group_name: string;
+  total_counselor: number;
+  total_participant: number;
+}
+
 const Dashboard = () => {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -46,12 +56,14 @@ const Dashboard = () => {
         if (isTemporary) {
           console.log('Temporary session found');
           setUser(userData);
+          fetchUserInfo(userData.id);
           return;
         }
 
         // For permanent sessions (Remember Me checked)
         console.log('Permanent session found');
         setUser(userData);
+        fetchUserInfo(userData.id);
       } catch (error) {
         console.error('Auth check error:', error);
         localStorage.removeItem('user');
@@ -64,7 +76,24 @@ const Dashboard = () => {
     checkAuth();
   }, [router]);
 
-  if (isChecking) {
+  const fetchUserInfo = async (userId: number) => {
+    try {
+      const response = await fetch(`/api/user-info?userId=${userId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch user info');
+      }
+      
+      setUserInfo(data.data);
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isChecking || isLoading) {
     return (
       <Box sx={{
         minHeight: '100vh',
@@ -151,7 +180,7 @@ const Dashboard = () => {
                 fontWeight: 'bold' // Added bold styling
               }}
             >
-              Juan Dela Cruz
+              {userInfo?.full_name || 'Loading...'}
             </Typography>
             <Box sx={{ 
               display: 'flex', 
@@ -162,10 +191,10 @@ const Dashboard = () => {
             }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                 <Typography color="text.secondary" sx={{ textAlign: 'left' }}>
-                  Company 1
+                  {userInfo?.company_name || 'No Company'}
                 </Typography>
                 <Typography color="text.secondary" sx={{ textAlign: 'right' }}>
-                  Group 1
+                  {userInfo?.group_name || 'No Group'}
                 </Typography>
               </Box>
             </Box>
@@ -191,7 +220,7 @@ const Dashboard = () => {
                   fontSize: { xs: '2rem', sm: '3rem' }
                 }}
               >
-                10
+                {userInfo?.total_participant || 0}
               </Typography>
               <Typography color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                 Participants
@@ -211,7 +240,7 @@ const Dashboard = () => {
                   fontSize: { xs: '2rem', sm: '3rem' }
                 }}
               >
-                2
+                {userInfo?.total_counselor || 0}
               </Typography>
               <Typography color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                 Counselors

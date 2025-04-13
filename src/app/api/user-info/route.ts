@@ -1,0 +1,55 @@
+import { NextResponse } from 'next/server';
+import { query } from '@/lib/db';
+import { RowDataPacket } from 'mysql2';
+
+interface UserInfoResponse {
+  success: boolean;
+  data?: {
+    full_name: string;
+    company_name: string;
+    group_name: string;
+    total_counselor: number;
+    total_participant: number;
+  };
+  error?: string;
+}
+
+export async function GET(request: Request) {
+  try {
+    // Get user ID from the URL
+    const url = new URL(request.url);
+    const userId = url.searchParams.get('userId');
+    
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Call the stored procedure
+    const sql = 'CALL get_user_company_group(?)';
+    const results = await query(sql, [parseInt(userId)]) as RowDataPacket[];
+    
+    // Stored procedure returns array of result sets, first element is our data
+    const userInfo = results[0][0] as RowDataPacket;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        full_name: userInfo.full_name,
+        company_name: userInfo.company_name,
+        group_name: userInfo.group_name,
+        total_counselor: userInfo.total_counselor,
+        total_participant: userInfo.total_participant
+      }
+    });
+
+  } catch (error) {
+    console.error('User info error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+} 
