@@ -45,6 +45,7 @@ const Dashboard = () => {
   const [showPastEvents, setShowPastEvents] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -52,6 +53,14 @@ const Dashboard = () => {
   const currentY = useRef(0);
   const isDragging = useRef(false);
   const refreshThreshold = 100; // pixels to trigger refresh
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 60000); // Refresh every minute
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -278,7 +287,7 @@ const Dashboard = () => {
                 textAlign: 'right',
                 mt: 1 // Added small top margin
               }}>
-                {new Date().toLocaleString('en-US', {
+                {currentDateTime.toLocaleString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric',
