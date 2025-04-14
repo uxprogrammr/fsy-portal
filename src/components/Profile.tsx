@@ -12,6 +12,12 @@ interface ProfileFormData {
   retypePassword: string;
 }
 
+interface UserInfo {
+  full_name: string;
+  company_name: string;
+  group_name: string;
+}
+
 const Profile = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<ProfileFormData>({
@@ -22,6 +28,8 @@ const Profile = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [userType, setUserType] = useState<string>('');
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -43,12 +51,25 @@ const Profile = () => {
         }
 
         const userData = JSON.parse(savedUser);
-        console.log('User data from localStorage:', userData); // Add logging to debug
+        console.log('User data from localStorage:', userData);
+        
+        // Set basic user data
         setFormData(prev => ({
           ...prev,
           email: userData.email || '',
           phone_number: userData.phone_number || ''
         }));
+        setUserType(userData.type || '');
+
+        // Fetch detailed user info
+        const response = await fetch(`/api/user-info?userId=${userData.id}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch user info');
+        }
+        
+        setUserInfo(data.data);
       } catch (error) {
         console.error('Error fetching user data:', error);
         router.push('/');
@@ -215,7 +236,7 @@ const Profile = () => {
               <TextField
                 fullWidth
                 disabled
-                value="Shawn Henry Solomon Cepeda"
+                value={userInfo?.full_name || ''}
                 sx={{ bgcolor: '#F5F5F5' }}
                 inputProps={{ autoComplete: 'name' }}
               />
@@ -228,9 +249,35 @@ const Profile = () => {
               <TextField
                 fullWidth
                 disabled
-                value="Counselor"
+                value={userType}
                 sx={{ bgcolor: '#F5F5F5' }}
                 inputProps={{ autoComplete: 'organization-title' }}
+              />
+            </Box>
+
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                Company
+              </Typography>
+              <TextField
+                fullWidth
+                disabled
+                value={userInfo?.company_name || ''}
+                sx={{ bgcolor: '#F5F5F5' }}
+                inputProps={{ autoComplete: 'organization' }}
+              />
+            </Box>
+
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                Group
+              </Typography>
+              <TextField
+                fullWidth
+                disabled
+                value={userInfo?.group_name || ''}
+                sx={{ bgcolor: '#F5F5F5' }}
+                inputProps={{ autoComplete: 'organization' }}
               />
             </Box>
 
