@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge, Switch, FormControlLabel, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge, Switch, FormControlLabel, CircularProgress, Snackbar, Alert } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import Fab from '@mui/material/Fab';
@@ -54,6 +54,15 @@ const Dashboard = () => {
   const currentY = useRef(0);
   const isDragging = useRef(false);
   const refreshThreshold = 100; // pixels to trigger refresh
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -194,6 +203,23 @@ const Dashboard = () => {
     setTimeout(() => {
       setIsRefreshing(false);
     }, 1000);
+  };
+
+  const handleEventClick = (event: Event) => {
+    if (event.status === 'upcoming') {
+      setSnackbar({
+        open: true,
+        message: 'Cannot check attendance for upcoming events',
+        severity: 'warning'
+      });
+      return;
+    }
+    
+    router.push(`/check-attendance?event_id=${event.event_id}`);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   if (isChecking || isLoading) {
@@ -448,7 +474,7 @@ const Dashboard = () => {
             {filteredEvents.map((event) => (
               <Box
                 key={event.event_id}
-                onClick={() => router.push(`/check-attendance?event_id=${event.event_id}`)}
+                onClick={() => handleEventClick(event)}
                 sx={{
                   cursor: 'pointer',
                   bgcolor: 'white',
@@ -518,6 +544,22 @@ const Dashboard = () => {
       >
         <QrCodeIcon />
       </Fab>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
