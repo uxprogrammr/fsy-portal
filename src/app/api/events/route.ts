@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
+import { getCurrentTimeStringInPH } from '@/utils/dateTimeUtils';
 
 interface DailyEvent extends RowDataPacket {
   event_id: number;
@@ -19,9 +20,8 @@ export async function GET() {
     const result = await query(`CALL get_current_events()`);
     const events = Array.isArray(result) && result[0] ? (result[0] as DailyEvent[]) : [];
     
-    // Get current time for comparison
-    const now = new Date();
-    const currentTime = now.toTimeString().split(' ')[0];
+    // Get current time in Philippines timezone for comparison
+    const currentTime = getCurrentTimeStringInPH();
 
     // Process events to add status
     const processedEvents = events.map((event) => {
