@@ -36,7 +36,7 @@ interface Event {
   status: 'past' | 'ongoing' | 'upcoming';
 }
 
-const Dashboard = () => {
+const CounselorDashboard = () => {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -252,7 +252,7 @@ const Dashboard = () => {
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '36px' }}>
           <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-            Dashboard
+            Counselor Dashboard
           </Typography>
           <IconButton 
             onClick={() => router.push('/profile')}
@@ -318,16 +318,16 @@ const Dashboard = () => {
                 textAlign: 'right',
                 mt: 1 // Added small top margin
               }}>
-                {formatDateTimeInPH(currentDateTime, {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric',
-                  second: 'numeric',
-                  hour12: true
-                })}
+              {formatDateTimeInPH(currentDateTime, {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                hour12: true
+              })}
             </Typography>
             <Typography variant="body1" color="text.secondary" gutterBottom>
               Hello,
@@ -564,4 +564,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default CounselorDashboard;
