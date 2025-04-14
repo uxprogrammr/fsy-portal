@@ -6,6 +6,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import Fab from '@mui/material/Fab';
 import { useRouter } from 'next/navigation';
+import { getCurrentDateTimeInPH, formatDateTimeInPH } from '../utils/dateTimeUtils';
 
 interface User {
   id: number;
@@ -45,7 +46,7 @@ const Dashboard = () => {
   const [showPastEvents, setShowPastEvents] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
-  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(getCurrentDateTimeInPH());
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -55,11 +56,11 @@ const Dashboard = () => {
   const refreshThreshold = 100; // pixels to trigger refresh
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentDateTime(new Date());
-    }, 60000); // Refresh every minute
+    const timer = setInterval(() => {
+      setCurrentDateTime(getCurrentDateTimeInPH());
+    }, 1000);
 
-    return () => clearInterval(interval); // Cleanup on unmount
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -291,12 +292,14 @@ const Dashboard = () => {
                 textAlign: 'right',
                 mt: 1 // Added small top margin
               }}>
-                {currentDateTime.toLocaleString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
+                {formatDateTimeInPH(currentDateTime, {
+                  weekday: 'long',
                   year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
                   hour: 'numeric',
                   minute: 'numeric',
+                  second: 'numeric',
                   hour12: true
                 })}
             </Typography>

@@ -9,6 +9,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { formatTimeInPH } from '../utils/dateTimeUtils';
 
 interface DailyEvent {
   event_id: number;
@@ -347,15 +348,6 @@ const CheckAttendance = () => {
     );
   }
 
-  // Format time to 12-hour format
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
-  };
-
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden' }}>
       {/* Fixed Header */}
@@ -404,7 +396,7 @@ const CheckAttendance = () => {
                   {currentEvent.event_name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  {formatTime(currentEvent.start_time)} - {formatTime(currentEvent.end_time)}
+                  {formatTimeInPH(currentEvent.start_time)} - {formatTimeInPH(currentEvent.end_time)}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
