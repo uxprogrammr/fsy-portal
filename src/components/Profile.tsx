@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 interface ProfileFormData {
   email: string;
-  phone: string;
+  phone_number: string;
   password: string;
   retypePassword: string;
 }
@@ -16,16 +16,22 @@ const Profile = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<ProfileFormData>({
     email: '',
-    phone: '',
+    phone_number: '',
     password: '',
     retypePassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success' as 'success' | 'error'
   });
+
+  // Set isClient to true once component mounts on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -37,10 +43,11 @@ const Profile = () => {
         }
 
         const userData = JSON.parse(savedUser);
+        console.log('User data from localStorage:', userData); // Add logging to debug
         setFormData(prev => ({
           ...prev,
           email: userData.email || '',
-          phone: userData.phone || ''
+          phone_number: userData.phone_number || ''
         }));
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -48,8 +55,10 @@ const Profile = () => {
       }
     };
 
-    fetchUserData();
-  }, [router]);
+    if (isClient) {
+      fetchUserData();
+    }
+  }, [router, isClient]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -92,7 +101,7 @@ const Profile = () => {
         },
         body: JSON.stringify({
           email: formData.email || undefined,
-          phone: formData.phone || undefined,
+          phone_number: formData.phone_number || undefined,
           password: formData.password || undefined,
           userId: userData.id
         }),
@@ -108,7 +117,7 @@ const Profile = () => {
       localStorage.setItem('user', JSON.stringify({
         ...userData,
         email: formData.email,
-        phone: formData.phone,
+        phone_number: formData.phone_number,
       }));
 
       setSnackbar({
@@ -132,6 +141,15 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
+
+  // Don't render form until client-side hydration is complete
+  if (!isClient) {
+    return (
+      <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden' }}>
@@ -199,6 +217,7 @@ const Profile = () => {
                 disabled
                 value="Shawn Henry Solomon Cepeda"
                 sx={{ bgcolor: '#F5F5F5' }}
+                inputProps={{ autoComplete: 'name' }}
               />
             </Box>
 
@@ -211,6 +230,7 @@ const Profile = () => {
                 disabled
                 value="Counselor"
                 sx={{ bgcolor: '#F5F5F5' }}
+                inputProps={{ autoComplete: 'organization-title' }}
               />
             </Box>
 
@@ -225,6 +245,7 @@ const Profile = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
+                inputProps={{ autoComplete: 'email' }}
               />
             </Box>
 
@@ -234,10 +255,11 @@ const Profile = () => {
               </Typography>
               <TextField
                 fullWidth
-                name="phone"
-                value={formData.phone}
+                name="phone_number"
+                value={formData.phone_number}
                 onChange={handleChange}
                 placeholder="Enter your phone number"
+                inputProps={{ autoComplete: 'tel' }}
               />
             </Box>
 
@@ -255,7 +277,6 @@ const Profile = () => {
                   placeholder="Enter your password"
                   helperText="Password must be at least 6 characters"
                   error={formData.password.length > 0 && formData.password.length < 6}
-                  autoComplete="new-password"
                   inputProps={{
                     autoComplete: 'new-password'
                   }}
@@ -270,7 +291,6 @@ const Profile = () => {
                 placeholder="Re-enter your password"
                 error={formData.retypePassword.length > 0 && formData.password !== formData.retypePassword}
                 helperText={formData.retypePassword.length > 0 && formData.password !== formData.retypePassword ? "Passwords do not match" : ""}
-                autoComplete="new-password"
                 inputProps={{
                   autoComplete: 'new-password'
                 }}
@@ -286,6 +306,7 @@ const Profile = () => {
                 bgcolor: '#006D91',
                 color: 'white',
                 py: { xs: 1.5, sm: 2 },
+                mb: { xs: 14, sm: 16 },
                 '&:hover': {
                   bgcolor: '#005d7a'
                 }

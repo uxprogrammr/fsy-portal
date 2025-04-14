@@ -12,7 +12,7 @@ interface LoginResponse {
     name: string;
     type: string;
     email: string;
-    phone: string;
+    phone_number: string;
     birthDate: string;
   };
 }

@@ -12,7 +12,7 @@ interface User {
   name: string;
   type: string;
   email: string;
-  phone: string;
+  phone_number: string;
   birthDate: string;
 }
 
@@ -401,7 +401,7 @@ const Dashboard = () => {
           </Button>
 
           {/* Events Section */}
-          <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+          <Box sx={{ mb: { xs: 13, sm: 14 } }}>
             <Box sx={{ 
               display: 'flex', 
               justifyContent: 'space-between', 

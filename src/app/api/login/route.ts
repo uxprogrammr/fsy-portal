@@ -15,7 +15,7 @@ interface User {
   name: string;
   type: string;
   email: string;
-  phone: string;
+  phone_number: string;
   birthDate: string;
 }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       name: user.full_name,
       type: user.user_type,
       email: user.email,
-      phone: user.phone,
+      phone_number: user.phone_number,
       birthDate: user.birth_date
     };
 

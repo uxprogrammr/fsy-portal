@@ -4,7 +4,9 @@ import { query } from '@/lib/db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, phone, password, userId } = body;
+    const { email, phone_number, password, userId } = body;
+
+    console.log('Profile update request body:', body); // Add logging to debug
 
     if (!userId) {
       return NextResponse.json(
@@ -25,9 +27,9 @@ export async function POST(request: Request) {
     }
 
     // Add phone if provided
-    if (phone) {
+    if (phone_number) {
       updateFields.push(' phone_number = ?');
-      values.push(phone);
+      values.push(phone_number);
     }
 
     // Add password if provided using SHA2 256
