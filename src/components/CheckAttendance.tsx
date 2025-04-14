@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, Container, Divider, Paper, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { Box, Typography, Button, IconButton, Container, Divider, Paper, CircularProgress, Snackbar, Alert, Badge, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -71,6 +71,12 @@ const CheckAttendance = () => {
     message: '',
     severity: 'success'
   });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [changedParticipants, setChangedParticipants] = useState<Set<number>>(new Set());
+  const [changedCounselors, setChangedCounselors] = useState<Set<number>>(new Set());
+  const [originalParticipantStatuses, setOriginalParticipantStatuses] = useState<Record<number, string>>({});
+  const [originalCounselorStatuses, setOriginalCounselorStatuses] = useState<Record<number, string>>({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const stats = {
     present: participants.filter(p => p.attendance_status === 'Present').length,
@@ -92,6 +98,22 @@ const CheckAttendance = () => {
       console.log('Participants data:', data);
       console.log('Number of participants:', data.participants?.length || 0);
       console.log('Number of counselors:', data.counselors?.length || 0);
+      
+      // Store original statuses
+      const participantStatuses: Record<number, string> = {};
+      const counselorStatuses: Record<number, string> = {};
+      
+      data.participants?.forEach((p: Participant) => {
+        participantStatuses[p.fsy_id] = p.attendance_status;
+      });
+      
+      data.counselors?.forEach((c: Participant) => {
+        counselorStatuses[c.fsy_id] = c.attendance_status;
+      });
+      
+      setOriginalParticipantStatuses(participantStatuses);
+      setOriginalCounselorStatuses(counselorStatuses);
+      
       setParticipants(data.participants || []);
       setCounselors(data.counselors || []);
     } catch (error) {
@@ -233,30 +255,111 @@ const CheckAttendance = () => {
     }
   };
 
-  const handleAttendanceClick = (participantId: number, currentStatus: string) => {
+  const handleAttendanceClick = (participantId: number, currentStatus: string, isCounselor: boolean = false) => {
     const newStatus = getNextStatus(currentStatus);
     
     // Update local state only
-    setParticipants(participants.map(p => 
-      p.fsy_id === participantId ? { ...p, attendance_status: newStatus } : p
-    ));
-    
-    // Also update counselors if needed
-    setCounselors(counselors.map(c => 
-      c.fsy_id === participantId ? { ...c, attendance_status: newStatus } : c
-    ));
+    if (isCounselor) {
+      setCounselors(counselors.map(c => 
+        c.fsy_id === participantId ? { ...c, attendance_status: newStatus } : c
+      ));
+      
+      // Only mark as changed if different from original
+      if (newStatus !== originalCounselorStatuses[participantId]) {
+        setChangedCounselors(prev => new Set([...prev, participantId]));
+        setHasUnsavedChanges(true);
+      } else {
+        // If status is back to original, remove from changed set
+        setChangedCounselors(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(participantId);
+          return newSet;
+        });
+        
+        // Check if there are any other changes
+        if (changedCounselors.size <= 1 && changedParticipants.size === 0) {
+          setHasUnsavedChanges(false);
+        }
+      }
+    } else {
+      setParticipants(participants.map(p => 
+        p.fsy_id === participantId ? { ...p, attendance_status: newStatus } : p
+      ));
+      
+      // Only mark as changed if different from original
+      if (newStatus !== originalParticipantStatuses[participantId]) {
+        setChangedParticipants(prev => new Set([...prev, participantId]));
+        setHasUnsavedChanges(true);
+      } else {
+        // If status is back to original, remove from changed set
+        setChangedParticipants(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(participantId);
+          return newSet;
+        });
+        
+        // Check if there are any other changes
+        if (changedParticipants.size <= 1 && changedCounselors.size === 0) {
+          setHasUnsavedChanges(false);
+        }
+      }
+    }
   };
 
   const handleClearAll = () => {
     // Update local state only
     setParticipants(participants.map(p => ({ ...p, attendance_status: 'Not Set' })));
     setCounselors(counselors.map(c => ({ ...c, attendance_status: 'Not Set' })));
+    
+    // Mark as changed only those that weren't already "Not Set"
+    const changedP = new Set<number>();
+    const changedC = new Set<number>();
+    
+    participants.forEach(p => {
+      if (originalParticipantStatuses[p.fsy_id] !== 'Not Set') {
+        changedP.add(p.fsy_id);
+      }
+    });
+    
+    counselors.forEach(c => {
+      if (originalCounselorStatuses[c.fsy_id] !== 'Not Set') {
+        changedC.add(c.fsy_id);
+      }
+    });
+    
+    setChangedParticipants(changedP);
+    setChangedCounselors(changedC);
+    
+    // Set unsaved changes flag if any changes were made
+    setHasUnsavedChanges(changedP.size > 0 || changedC.size > 0);
   };
 
   const handleAllPresent = () => {
     // Update local state only
     setParticipants(participants.map(p => ({ ...p, attendance_status: 'Present' })));
     setCounselors(counselors.map(c => ({ ...c, attendance_status: 'Present' })));
+    
+    // Mark as changed only those that weren't already "Present"
+    const changedP = new Set<number>();
+    const changedC = new Set<number>();
+    
+    participants.forEach(p => {
+      if (originalParticipantStatuses[p.fsy_id] !== 'Present') {
+        changedP.add(p.fsy_id);
+      }
+    });
+    
+    counselors.forEach(c => {
+      if (originalCounselorStatuses[c.fsy_id] !== 'Present') {
+        changedC.add(c.fsy_id);
+      }
+    });
+    
+    setChangedParticipants(changedP);
+    setChangedCounselors(changedC);
+    
+    // Set unsaved changes flag if any changes were made
+    setHasUnsavedChanges(changedP.size > 0 || changedC.size > 0);
   };
 
   const handleSubmitAttendance = async () => {
@@ -288,12 +391,22 @@ const CheckAttendance = () => {
         throw new Error(errorData.error || 'Failed to submit attendance');
       }
 
+      // Reset unsaved changes flags
+      setHasUnsavedChanges(false);
+      setChangedParticipants(new Set());
+      setChangedCounselors(new Set());
+
       // Show success toast
       setSnackbar({
         open: true,
         message: 'Attendance submitted successfully',
         severity: 'success'
       });
+      
+      // Redirect to Dashboard after a short delay to allow the success message to be seen
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (error) {
       console.error('Error submitting attendance:', error);
       setError('Failed to submit attendance');
@@ -309,6 +422,23 @@ const CheckAttendance = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleBackClick = () => {
+    if (hasUnsavedChanges) {
+      setShowConfirmDialog(true);
+    } else {
+      router.back();
+    }
+  };
+
+  const handleConfirmNavigation = () => {
+    setShowConfirmDialog(false);
+    router.back();
+  };
+
+  const handleCancelNavigation = () => {
+    setShowConfirmDialog(false);
   };
 
   if (isLoading) {
@@ -364,7 +494,7 @@ const CheckAttendance = () => {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton 
-            onClick={() => router.back()}
+            onClick={handleBackClick}
             sx={{ color: 'white' }}
           >
             <ArrowBackIcon />
@@ -406,6 +536,22 @@ const CheckAttendance = () => {
                     {userCompanyGroup?.group_name || 'No Group'}
                   </Typography>
                 </Box>
+                {hasUnsavedChanges && (
+                  <Box sx={{ 
+                    bgcolor: 'warning.light', 
+                    color: 'warning.dark', 
+                    p: 1, 
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 2
+                  }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                      Changes Not Saved
+                    </Typography>
+                  </Box>
+                )}
               </>
             ) : null}
           </Box>
@@ -488,16 +634,31 @@ const CheckAttendance = () => {
                     {participant.unit_name}
                   </Typography>
                 </Box>
-                <IconButton 
-                  onClick={() => handleAttendanceClick(participant.fsy_id, participant.attendance_status)}
-                  sx={{ 
-                    '&:hover': {
-                      bgcolor: 'action.hover'
-                    }
-                  }}
-                >
-                  {getAttendanceIcon(participant.attendance_status)}
-                </IconButton>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  {changedParticipants.has(participant.fsy_id) && (
+                    <Tooltip title="Not Saved">
+                      <Box 
+                        sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          bgcolor: 'warning.main',
+                          mr: 1
+                        }} 
+                      />
+                    </Tooltip>
+                  )}
+                  <IconButton 
+                    onClick={() => handleAttendanceClick(participant.fsy_id, participant.attendance_status)}
+                    sx={{ 
+                      '&:hover': {
+                        bgcolor: 'action.hover'
+                      }
+                    }}
+                  >
+                    {getAttendanceIcon(participant.attendance_status)}
+                  </IconButton>
+                </Box>
               </Box>
             ))}
           </Box>
@@ -524,16 +685,31 @@ const CheckAttendance = () => {
                     {counselor.unit_name}
                   </Typography>
                 </Box>
-                <IconButton 
-                  onClick={() => handleAttendanceClick(counselor.fsy_id, counselor.attendance_status)}
-                  sx={{ 
-                    '&:hover': {
-                      bgcolor: 'action.hover'
-                    }
-                  }}
-                >
-                  {getAttendanceIcon(counselor.attendance_status)}
-                </IconButton>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  {changedCounselors.has(counselor.fsy_id) && (
+                    <Tooltip title="Not Saved">
+                      <Box 
+                        sx={{ 
+                          width: 8, 
+                          height: 8, 
+                          borderRadius: '50%', 
+                          bgcolor: 'warning.main',
+                          mr: 1
+                        }} 
+                      />
+                    </Tooltip>
+                  )}
+                  <IconButton 
+                    onClick={() => handleAttendanceClick(counselor.fsy_id, counselor.attendance_status, true)}
+                    sx={{ 
+                      '&:hover': {
+                        bgcolor: 'action.hover'
+                      }
+                    }}
+                  >
+                    {getAttendanceIcon(counselor.attendance_status)}
+                  </IconButton>
+                </Box>
               </Box>
             ))}
           </Box>
@@ -560,6 +736,31 @@ const CheckAttendance = () => {
           <Box sx={{ height: { xs: 60, sm: 80 } }} />
         </Container>
       </Box>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={showConfirmDialog}
+        onClose={handleCancelNavigation}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Unsaved Changes
+        </DialogTitle>
+        <DialogContent>
+          <Typography id="alert-dialog-description">
+            You have unsaved changes to attendance records. Are you sure you want to leave without saving?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelNavigation} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmNavigation} color="error" autoFocus>
+            Leave Without Saving
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar for notifications */}
       <Snackbar 
