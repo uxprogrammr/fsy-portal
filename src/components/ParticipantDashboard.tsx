@@ -257,7 +257,7 @@ const ParticipantDashboard = () => {
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '36px' }}>
           <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-            Participant Dashboard
+            Dashboard
           </Typography>
           <IconButton 
             onClick={() => router.push('/profile')}
@@ -377,24 +377,24 @@ const ParticipantDashboard = () => {
             <Typography variant="h6" gutterBottom sx={{ color: '#2E7D32' }}>
               Your Information
             </Typography>
-            <Grid container spacing={2}>
-              <Grid xs={6} component="div">
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ flex: '1 1 50%' }}>
                 <Typography variant="body2" color="text.secondary">
                   Email
                 </Typography>
                 <Typography variant="body1">
                   {user?.email || 'N/A'}
                 </Typography>
-              </Grid>
-              <Grid xs={6} component="div">
+              </Box>
+              <Box sx={{ flex: '1 1 50%' }}>
                 <Typography variant="body2" color="text.secondary">
                   Phone
                 </Typography>
                 <Typography variant="body1">
                   {user?.phone_number || 'N/A'}
                 </Typography>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Paper>
 
           {/* Events Section */}

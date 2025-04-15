@@ -252,7 +252,7 @@ const CounselorDashboard = () => {
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '36px' }}>
           <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-            Counselor Dashboard
+            Dashboard
           </Typography>
           <IconButton 
             onClick={() => router.push('/profile')}
