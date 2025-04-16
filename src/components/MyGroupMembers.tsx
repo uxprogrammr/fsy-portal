@@ -74,16 +74,9 @@ export default function MyGroupMembers() {
         const userInfoData = await userResponse.json();
         setUserInfo(userInfoData);
 
-        // Fetch current event
-        const eventResponse = await fetch('/api/events/current');
-        if (!eventResponse.ok) {
-          throw new Error('Failed to fetch current event');
-        }
-        const eventData = await eventResponse.json();
-
-        // Now fetch participants with all required parameters
+        // Fetch all members for the company and group using event_id=0
         const response = await fetch(
-          `/api/participants?event_id=${eventData.event_id}&company_id=${userInfoData.data.company_id}&group_id=${groupId}`
+          `/api/participants?event_id=0&company_id=${userInfoData.data.company_id}&group_id=${groupId}`
         );
         
         if (!response.ok) {
