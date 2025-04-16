@@ -15,6 +15,7 @@ interface UserInfoResponse {
     total_participant: number;
     stake_name: string;
     unit_name: string;
+    venue: string | null;
   };
   error?: string;
 }
@@ -51,7 +52,8 @@ export async function GET(request: Request) {
         total_counselor: userInfo.total_counselor,
         total_participant: userInfo.total_participant,
         stake_name: userInfo.stake_name,
-        unit_name: userInfo.unit_name
+        unit_name: userInfo.unit_name,
+        venue: userInfo.venue
       }
     });
 
