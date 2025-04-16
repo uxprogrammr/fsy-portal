@@ -583,7 +583,7 @@ const ParticipantDashboard = () => {
               fontSize: '14px',
               color: '#0F172A'
             }}>
-              Day {currentEvent?.day_number || 1}
+              Day {currentEvent?.day_number || nextEvent?.day_number ||  1}
             </Typography>
           </Box>
 
