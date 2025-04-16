@@ -294,7 +294,8 @@ const ParticipantDashboard = () => {
       <Box sx={{ 
         flex: 1,
         overflow: 'auto',
-        pt: { xs: '64px', sm: '80px' }
+        pt: { xs: '64px', sm: '80px' },
+        pb: 4
       }}>
         {/* Date/Time */}
         <Box sx={{ 

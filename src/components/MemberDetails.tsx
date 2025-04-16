@@ -72,7 +72,7 @@ export default function MemberDetails() {
   }
 
   return (
-    <Box sx={{ height: '100vh', overflow: 'auto', bgcolor: '#F8F9FA' }}>
+    <Box sx={{ height: '100vh', overflow: 'auto', bgcolor: '#F8F9FA', pb: 4 }}>
       {/* Header */}
       <Box sx={{ 
         position: 'sticky',
