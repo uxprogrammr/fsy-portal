@@ -210,7 +210,7 @@ const ParticipantDashboard = () => {
   }, [router]);
 
   useEffect(() => {
-    if (!nextEvent) return;
+    if (!nextEvent?.start_time) return;
 
     const updateCountdown = () => {
       const now = getCurrentDateTimeInPH();
