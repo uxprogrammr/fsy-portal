@@ -119,7 +119,7 @@ export default function MyGroupMembers() {
       height: '100vh',
       overflow: 'auto',
       bgcolor: '#F8F9FA',
-      pb: 4
+      pb: 10
     }}>
       {/* Header */}
       <Box sx={{ 
