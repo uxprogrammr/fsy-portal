@@ -23,6 +23,7 @@ interface UserInfo {
   group_name: string;
   total_counselor: number;
   total_participant: number;
+  group_id?: number;
 }
 
 interface Event {
@@ -372,8 +373,18 @@ const CounselorDashboard = () => {
               flex: 1, 
               p: { xs: 1.5, sm: 2 }, 
               textAlign: 'center', 
-              borderRadius: 4 
-            }}>
+              borderRadius: 4,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: 'rgba(0, 0, 0, 0.04)'
+              }
+            }}
+            onClick={() => {
+              if (userInfo?.group_id) {
+                router.push(`/my-group-members?group_id=${userInfo.group_id}`);
+              }
+            }}
+            >
               <Typography 
                 variant="h3" 
                 component="div" 

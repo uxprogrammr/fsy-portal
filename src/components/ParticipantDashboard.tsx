@@ -527,7 +527,7 @@ const ParticipantDashboard = () => {
             <Button
               fullWidth
               variant="contained"
-              onClick={() => router.push(`/my-group-members?groupId=${userInfo?.group_id}`)}
+              onClick={() => router.push(`/my-group-members?group_id=${userInfo?.group_id}`)}
               sx={{
                 bgcolor: '#006184',
                 color: '#FFFFFF',

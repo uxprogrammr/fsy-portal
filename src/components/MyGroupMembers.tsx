@@ -50,7 +50,7 @@ export default function MyGroupMembers() {
 
     const fetchMembers = async () => {
       try {
-        const groupId = params.get('groupId');
+        const groupId = params.get('group_id');
         if (!groupId) {
           console.error('No group ID provided');
           router.push('/dashboard');
