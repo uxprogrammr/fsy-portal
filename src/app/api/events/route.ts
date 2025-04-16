@@ -14,11 +14,53 @@ interface DailyEvent extends RowDataPacket {
   created_at: string;
 }
 
+// In-memory cache for events
+let eventsCache: DailyEvent[] | null = null;
+let eventsCacheTimestamp: number = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function GET() {
   try {
+    // Check if we have a valid cache
+    const now = Date.now();
+    if (eventsCache && (now - eventsCacheTimestamp) < CACHE_TTL) {
+      // Get current time in Philippines timezone for comparison
+      const currentTime = getCurrentTimeStringInPH();
+
+      // Process events to add status
+      const processedEvents = eventsCache.map((event) => {
+        const isPast = event.end_time < currentTime;
+        const isOngoing = event.start_time <= currentTime && event.end_time >= currentTime;
+
+        return {
+          ...event,
+          status: isPast ? 'past' : isOngoing ? 'ongoing' : 'upcoming'
+        };
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        data: processedEvents,
+        cached: true
+      });
+    }
+
     // Call the stored procedure and get the first result set
     const result = await query(`CALL get_current_events()`);
-    const events = Array.isArray(result) && result[0] ? (result[0] as DailyEvent[]) : [];
+    
+    // Check if result exists and has data
+    if (!result || !Array.isArray(result) || !result[0]) {
+      return NextResponse.json({ 
+        success: true, 
+        data: [] 
+      });
+    }
+    
+    const events = result[0] as DailyEvent[];
+    
+    // Update cache
+    eventsCache = events;
+    eventsCacheTimestamp = now;
     
     // Get current time in Philippines timezone for comparison
     const currentTime = getCurrentTimeStringInPH();
@@ -40,9 +82,11 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching events:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch events' },
-      { status: 500 }
-    );
+    
+    // Return empty data instead of error to prevent cascading failures
+    return NextResponse.json({ 
+      success: true, 
+      data: [] 
+    });
   }
 } 

@@ -42,6 +42,7 @@ const ParticipantDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const savedUser = localStorage.getItem('user');
         if (!savedUser) {
           router.push('/');
@@ -50,76 +51,163 @@ const ParticipantDashboard = () => {
 
         const userData = JSON.parse(savedUser);
         
-        // Fetch user info
-        const userResponse = await fetch(`/api/user-info?userId=${userData.id}`);
-        const userData2 = await userResponse.json();
+        // Check if we have cached user info and it's less than 5 minutes old
+        const cachedUserInfo = localStorage.getItem('cachedUserInfo');
+        const cachedUserInfoTimestamp = localStorage.getItem('cachedUserInfoTimestamp');
+        const now = Date.now();
         
-        if (!userResponse.ok) {
-          throw new Error(userData2.error || 'Failed to fetch user info');
-        }
-        
-        setUserInfo(userData2.data);
-
-        // Fetch current event
-        const eventResponse = await fetch('/api/events/current');
-        if (eventResponse.status === 404) {
-          setCurrentEvent(null);
+        if (cachedUserInfo && cachedUserInfoTimestamp && (now - parseInt(cachedUserInfoTimestamp)) < 5 * 60 * 1000) {
+          // Use cached user info
+          setUserInfo(JSON.parse(cachedUserInfo));
         } else {
-          const eventData = await eventResponse.json();
-          if (eventResponse.ok) {
-            setCurrentEvent(eventData);
-          } else {
-            console.error('Error fetching current event:', eventData.error);
+          // Fetch user info with retry logic
+          let userInfoData = null;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries && !userInfoData) {
+            try {
+              const userResponse = await fetch(`/api/user-info?userId=${userData.id}`);
+              const userData2 = await userResponse.json();
+              
+              if (userResponse.ok) {
+                userInfoData = userData2.data;
+                setUserInfo(userInfoData);
+                
+                // Cache user info
+                localStorage.setItem('cachedUserInfo', JSON.stringify(userInfoData));
+                localStorage.setItem('cachedUserInfoTimestamp', now.toString());
+                
+                break;
+              } else {
+                console.warn(`Failed to fetch user info (attempt ${retryCount + 1}/${maxRetries}):`, userData2.error);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                  // Wait before retrying (exponential backoff)
+                  await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+                }
+              }
+            } catch (error) {
+              console.error(`Error fetching user info (attempt ${retryCount + 1}/${maxRetries}):`, error);
+              retryCount++;
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+              }
+            }
+          }
+          
+          if (!userInfoData) {
+            throw new Error('Failed to fetch user info after multiple attempts');
           }
         }
 
-        // Fetch next event
-        const nextEventResponse = await fetch('/api/events/next');
-        if (nextEventResponse.ok) {
-          const nextEventData = await nextEventResponse.json();
-          setNextEvent(nextEventData);
+        // Check if we have cached events and they're less than 5 minutes old
+        const cachedEvents = localStorage.getItem('cachedEvents');
+        const cachedEventsTimestamp = localStorage.getItem('cachedEventsTimestamp');
+        
+        if (cachedEvents && cachedEventsTimestamp && (now - parseInt(cachedEventsTimestamp)) < 5 * 60 * 1000) {
+          // Use cached events
+          const eventsData = JSON.parse(cachedEvents);
+          setCurrentEvent(eventsData.currentEvent);
+          setNextEvent(eventsData.nextEvent);
+          setUpcomingEvents(eventsData.upcomingEvents);
+        } else {
+          // Fetch events in sequence to reduce connection load
+          try {
+            // First fetch current event
+            const eventResponse = await fetch('/api/events/current');
+            let currentEventData = null;
+            
+            if (eventResponse.status === 404) {
+              setCurrentEvent(null);
+            } else if (eventResponse.ok) {
+              currentEventData = await eventResponse.json();
+              setCurrentEvent(currentEventData);
+            } else {
+              console.error('Error fetching current event:', await eventResponse.text());
+            }
+            
+            // Then fetch next event
+            const nextEventResponse = await fetch('/api/events/next');
+            let nextEventData = null;
+            
+            if (nextEventResponse.ok) {
+              nextEventData = await nextEventResponse.json();
+              setNextEvent(nextEventData);
+            } else if (nextEventResponse.status === 404) {
+              // No upcoming events - this is a valid state
+              setNextEvent(null);
+              console.log('No upcoming events found');
+            } else {
+              console.error('Error fetching next event:', await nextEventResponse.text());
+            }
+            
+            // Finally fetch all events
+            const upcomingResponse = await fetch('/api/events');
+            let upcomingEventsData = [];
+            
+            if (upcomingResponse.ok) {
+              const eventsData = await upcomingResponse.json();
+              const now = getCurrentDateTimeInPH();
+              const currentTime = now.toLocaleTimeString('en-US', { hour12: false });
+              
+              // Filter out past events and sort by start time
+              const upcoming = eventsData.data
+                .filter((event: DailyEvent) => {
+                  if (event.day_number < (currentEventData?.day_number || 1)) return false;
+                  if (event.day_number > (currentEventData?.day_number || 1)) return true;
+                  return event.start_time > currentTime;
+                })
+                .sort((a: DailyEvent, b: DailyEvent) => {
+                  if (a.day_number !== b.day_number) {
+                    return a.day_number - b.day_number;
+                  }
+                  return a.start_time.localeCompare(b.start_time);
+                });
+              
+              upcomingEventsData = upcoming;
+              setUpcomingEvents(upcoming);
+            } else {
+              console.error('Error fetching upcoming events:', await upcomingResponse.text());
+            }
+            
+            // Cache events
+            localStorage.setItem('cachedEvents', JSON.stringify({
+              currentEvent: currentEventData,
+              nextEvent: nextEventData,
+              upcomingEvents: upcomingEventsData
+            }));
+            localStorage.setItem('cachedEventsTimestamp', now.toString());
+          } catch (error) {
+            console.error('Error fetching events:', error);
+          }
         }
-
-        // Fetch all events
-        const upcomingResponse = await fetch('/api/events');
-        if (upcomingResponse.ok) {
-          const eventsData = await upcomingResponse.json();
-          const now = getCurrentDateTimeInPH();
-          const currentTime = now.toLocaleTimeString('en-US', { hour12: false });
-          
-          // Filter out past events and sort by start time
-          const upcoming = eventsData.data
-            .filter((event: DailyEvent) => {
-              if (event.day_number < (currentEvent?.day_number || 1)) return false;
-              if (event.day_number > (currentEvent?.day_number || 1)) return true;
-              return event.start_time > currentTime;
-            })
-            .sort((a: DailyEvent, b: DailyEvent) => {
-              if (a.day_number !== b.day_number) {
-                return a.day_number - b.day_number;
-              }
-              return a.start_time.localeCompare(b.start_time);
-            });
-          
-          setUpcomingEvents(upcoming);
-        }
+        
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [router]);
-
-  useEffect(() => {
+    
+    // Set up a timer to update the current date and time every second
     const timer = setInterval(() => {
       setCurrentDateTime(getCurrentDateTimeInPH());
     }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
+    
+    // Set up a timer to refresh data every 15 minutes (increased from 10 minutes)
+    const refreshTimer = setInterval(() => {
+      fetchData();
+    }, 15 * 60 * 1000);
+    
+    // Clean up timers on component unmount
+    return () => {
+      clearInterval(timer);
+      clearInterval(refreshTimer);
+    };
+  }, [router]);
 
   useEffect(() => {
     if (!nextEvent) return;
@@ -438,6 +526,7 @@ const ParticipantDashboard = () => {
             <Button
               fullWidth
               variant="contained"
+              onClick={() => router.push(`/my-group-members?groupId=${userInfo?.group_id}`)}
               sx={{
                 bgcolor: '#006184',
                 color: '#FFFFFF',
