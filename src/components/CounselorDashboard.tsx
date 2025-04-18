@@ -155,6 +155,8 @@ const CounselorDashboard = () => {
   const filteredEvents = events.filter(event => 
     showPastEvents || event.status !== 'past'
   );
+  
+  console.log('Filtered events:', filteredEvents);
 
   // Handle touch/mouse events for pull-to-refresh
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
@@ -478,7 +480,7 @@ const CounselorDashboard = () => {
                 color="text.secondary"
                 sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
               >
-                Day {events[0]?.day_number || 1}
+                Day {events.length > 0 ? events[0].day_number : 1}
               </Typography>
             </Box>
 

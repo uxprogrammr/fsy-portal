@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CounselorDashboard from '@/components/CounselorDashboard';
 import ParticipantDashboard from '@/components/ParticipantDashboard';
+import CoordinatorDashboard from '@/components/CoordinatorDashboard';
 import { Box, CircularProgress } from '@mui/material';
 
 interface User {
@@ -67,5 +68,12 @@ export default function DashboardPage() {
     return null;
   }
 
-  return userType === 'Counselor' ? <CounselorDashboard /> : <ParticipantDashboard />;
+  // Render the appropriate dashboard based on user type
+  if (userType === 'Counselor') {
+    return <CounselorDashboard />;
+  } else if (userType === 'Coordinator') {
+    return <CoordinatorDashboard />;
+  } else {
+    return <ParticipantDashboard />;
+  }
 } 

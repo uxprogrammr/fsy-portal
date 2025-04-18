@@ -35,7 +35,12 @@ export function formatDateTimeInPH(
  * @param timeString Time string in HH:MM:SS format
  * @returns Formatted time string
  */
-export function formatTimeInPH(timeString: string): string {
+export function formatTimeInPH(timeString: string | undefined | null): string {
+  // Return empty string if timeString is undefined or null
+  if (!timeString) {
+    return '';
+  }
+  
   // Create a date object with the time string in Philippines timezone
   const [hours, minutes] = timeString.split(':');
   const date = new Date();
