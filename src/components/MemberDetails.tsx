@@ -3,6 +3,7 @@
 import React from 'react';
 import { Box, Typography, IconButton, Avatar, CircularProgress } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -22,6 +23,10 @@ export default function MemberDetails() {
   const params = useSearchParams();
   const [memberInfo, setMemberInfo] = React.useState<MemberInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
+
+  const handleHomeClick = () => {
+    router.push('/dashboard');
+  };
 
   React.useEffect(() => {
     const fetchMemberInfo = async () => {
@@ -82,17 +87,26 @@ export default function MemberDetails() {
         color: 'white',
         p: 1,
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton 
+            onClick={() => router.back()}
+            sx={{ color: 'white', mr: 1 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h6">
+            Member Details
+          </Typography>
+        </Box>
         <IconButton 
-          onClick={() => router.back()}
-          sx={{ color: 'white', mr: 1 }}
+          onClick={handleHomeClick}
+          sx={{ color: 'white' }}
         >
-          <ArrowBackIcon />
+          <HomeIcon />
         </IconButton>
-        <Typography variant="h6">
-          Member Details
-        </Typography>
       </Box>
 
       {/* Profile Section */}
