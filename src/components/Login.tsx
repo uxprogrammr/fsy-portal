@@ -19,7 +19,7 @@ interface LoginResponse {
 
 export default function Login() {
   console.log('Login component rendering');
-  
+
   // Direct check for localStorage
   try {
     const testKey = 'test_' + Date.now();
@@ -30,7 +30,7 @@ export default function Login() {
   } catch (e) {
     console.error('localStorage test failed:', e);
   }
-  
+
   const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
@@ -48,7 +48,7 @@ export default function Login() {
   // Load saved credentials when component mounts
   useEffect(() => {
     console.log('Login component mounted');
-    
+
     try {
       // Test localStorage access
       console.log('Testing localStorage access');
@@ -58,14 +58,14 @@ export default function Login() {
     } catch (e) {
       console.error('localStorage access error:', e);
     }
-    
+
     const loadSavedCredentials = () => {
       console.log('loadSavedCredentials function called');
       try {
         // Check for saved user session
         const savedUser = localStorage.getItem('user');
         console.log('Saved user from localStorage:', savedUser);
-        
+
         if (savedUser) {
           const userData = JSON.parse(savedUser);
           if (userData.id && userData.type) {
@@ -79,12 +79,12 @@ export default function Login() {
         const savedCredentials = localStorage.getItem('savedCredentials');
         console.log('Checking for saved credentials...');
         console.log('Raw savedCredentials from localStorage:', savedCredentials);
-        
+
         if (savedCredentials) {
           try {
             const { username, password, rememberMe } = JSON.parse(savedCredentials);
             console.log('Found saved credentials:', { username, rememberMe });
-            
+
             // Always set the form data if we have saved credentials
             console.log('Setting form data with saved credentials');
             setFormData({
@@ -112,7 +112,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.username || !formData.password) {
       setError('Username and password are required');
@@ -128,7 +128,7 @@ export default function Login() {
         username: formData.username,
         rememberMe: formData.rememberMe
       });
-      
+
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -149,7 +149,7 @@ export default function Login() {
 
       const loginData = data as LoginResponse;
       console.log('Login successful, user data:', loginData.user);
-      
+
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(loginData.user));
       console.log('User data saved to localStorage');
@@ -189,12 +189,12 @@ export default function Login() {
       ...prev,
       [name]: name === 'rememberMe' ? checked : value
     }));
-    
+
     // If Remember Me is unchecked, clear saved credentials
     if (name === 'rememberMe' && !checked) {
       localStorage.removeItem('savedCredentials');
     }
-    
+
     // Mark field as touched when user types
     if (name !== 'rememberMe') {
       setTouched(prev => ({
@@ -241,7 +241,7 @@ export default function Login() {
       overflow: 'auto',
       pt: { xs: 0, sm: 0 }
     }}>
-      <Box sx={{ 
+      <Box sx={{
         width: { xs: '100%', sm: '400px' },
         mx: 'auto',
         p: { xs: 1, sm: 2 },
@@ -269,10 +269,10 @@ export default function Login() {
           </Box>
 
           {/* Portal Text and Year */}
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
             mb: 2
           }}>
             <Typography sx={{
@@ -319,7 +319,7 @@ export default function Login() {
                 required
                 fullWidth
                 name="username"
-                placeholder="Email or Phone Number"
+                placeholder="Phone Number"
                 value={formData.username}
                 onChange={handleChange}
                 onBlur={() => handleBlur('username')}
