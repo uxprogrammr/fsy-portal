@@ -425,7 +425,16 @@ const ParticipantDashboard = () => {
                 <CircularProgress size={24} />
               </Box>
             ) : currentEvent ? (
-              <>
+              <Box 
+                onClick={() => router.push(`/event-details/${currentEvent.event_id}`)}
+                sx={{ 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: 'rgba(0, 0, 0, 0.02)',
+                    borderRadius: '8px'
+                  }
+                }}
+              >
                 <Typography sx={{ 
                   fontSize: '20px',
                   fontWeight: 600,
@@ -454,9 +463,18 @@ const ParticipantDashboard = () => {
                     Venue: {currentEvent.venue}
                   </Typography>
                 )}
-              </>
+              </Box>
             ) : nextEvent ? (
-              <>
+              <Box 
+                onClick={() => router.push(`/event-details/${nextEvent.event_id}`)}
+                sx={{ 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: 'rgba(0, 0, 0, 0.02)',
+                    borderRadius: '8px'
+                  }
+                }}
+              >
                 <Typography sx={{ 
                   fontSize: '12px',
                   color: '#006184',
@@ -505,7 +523,7 @@ const ParticipantDashboard = () => {
                     Venue: {nextEvent.venue}
                   </Typography>
                 )}
-              </>
+              </Box>
             ) : (
               <Typography sx={{ 
                 fontSize: '16px',
@@ -598,12 +616,19 @@ const ParticipantDashboard = () => {
               upcomingEvents.map((event) => (
                 <Box
                   key={event.event_id}
+                  onClick={() => router.push(`/event-details/${event.event_id}`)}
                   sx={{
                     bgcolor: '#FFFFFF',
                     borderRadius: '10px',
                     p: 2,
                     boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)',
-                    border: '1px solid rgba(0, 0, 0, 0.05)'
+                    border: '1px solid rgba(0, 0, 0, 0.05)',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: 'rgba(0, 0, 0, 0.02)',
+                      transform: 'translateY(-1px)',
+                      transition: 'transform 0.2s ease-in-out'
+                    }
                   }}
                 >
                   <Typography sx={{
