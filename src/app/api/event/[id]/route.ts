@@ -14,12 +14,10 @@ interface EventDetails extends RowDataPacket {
   created_at: string;
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request) {
   try {
-    const eventId = params.id;
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get('id');
 
     if (!eventId) {
       return NextResponse.json(
