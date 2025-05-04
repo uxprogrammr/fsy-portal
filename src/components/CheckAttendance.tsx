@@ -364,7 +364,7 @@ const CheckAttendance = () => {
 
   const handleSubmitAttendance = async () => {
     try {
-      if (!currentEvent) return;
+      if (!currentEvent || !user) return;
 
       const response = await fetch('/api/attendance/submit', {
         method: 'POST',
@@ -375,6 +375,7 @@ const CheckAttendance = () => {
           event_id: currentEvent.event_id,
           company_id: userCompanyGroup?.company_id,
           group_id: userCompanyGroup?.group_id,
+          user_id: user.id,
           participants: participants.map(p => ({
             fsy_id: p.fsy_id,
             attendance_status: p.attendance_status

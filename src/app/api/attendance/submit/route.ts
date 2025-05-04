@@ -10,6 +10,7 @@ interface SubmitAttendanceRequest {
   event_id: number;
   company_id: number;
   group_id: number;
+  user_id: number;
   participants: AttendanceUpdate[];
   counselors: AttendanceUpdate[];
 }
@@ -17,11 +18,11 @@ interface SubmitAttendanceRequest {
 export async function POST(request: Request) {
   try {
     const body: SubmitAttendanceRequest = await request.json();
-    const { event_id, company_id, group_id, participants, counselors } = body;
+    const { event_id, company_id, group_id, user_id, participants, counselors } = body;
 
-    if (!event_id || !company_id || !group_id) {
+    if (!event_id || !company_id || !group_id || !user_id) {
       return NextResponse.json(
-        { error: 'Event ID, Company ID, and Group ID are required' },
+        { error: 'Event ID, Company ID, Group ID, and User ID are required' },
         { status: 400 }
       );
     }
@@ -30,17 +31,19 @@ export async function POST(request: Request) {
       event_id,
       company_id,
       group_id,
+      user_id,
       participantsCount: participants.length,
       counselorsCount: counselors.length
     });
 
     // Call the stored procedure to update attendance
     await query(
-      'CALL update_attendance(?, ?, ?, ?, ?)',
+      'CALL update_attendance(?, ?, ?, ?, ?, ?)',
       [
         event_id,
         company_id,
         group_id,
+        user_id,
         JSON.stringify(participants),
         JSON.stringify(counselors)
       ]
