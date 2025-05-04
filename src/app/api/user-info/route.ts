@@ -62,6 +62,14 @@ export async function GET(request: Request) {
     // Stored procedure returns array of result sets, first element is our data
     const userInfo = results[0][0] as RowDataPacket;
     
+
+    if (userInfo.company_id == null || userInfo.group_id == null) {
+      return NextResponse.json(
+        { success: false, error: 'User is not associated with any company or group' },
+        { status: 404 }
+      );
+    }
+
     const userData = {
       fsy_id: userInfo.fsy_id,
       full_name: userInfo.full_name,

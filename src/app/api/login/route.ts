@@ -45,6 +45,27 @@ export async function POST(request: Request) {
 
     const user = users[0];
 
+    // Check if user has company and group association
+    const companyGroupSql = 'CALL get_user_company_group(?)';
+    const companyGroupResults = await query(companyGroupSql, [user.user_id]) as RowDataPacket[];
+    
+    // Check if results exist and have data
+    if (!companyGroupResults || !companyGroupResults[0] || !companyGroupResults[0][0]) {
+      return NextResponse.json(
+        { success: false, error: 'User information not found' },
+        { status: 404 }
+      );
+    }
+    
+    const userInfo = companyGroupResults[0][0] as RowDataPacket;
+    
+    if (userInfo.company_id == null || userInfo.group_id == null) {
+      return NextResponse.json(
+        { success: false, error: 'User is not associated with any company or group' },
+        { status: 403 }
+      );
+    }
+
     // Return user data for localStorage
     const userData: User = {
       id: user.user_id,
