@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     console.log('[Debug] Session cookie present:', !!session);
     if (session) {
       console.log('[Debug] Session cookie name:', session.name);
+      console.log('[Debug] Session cookie value:', session.value);
     }
     
     if (!session) {
@@ -51,7 +52,9 @@ export async function GET(request: Request) {
       [decoded.id]
     ) as RowDataPacket[][];
 
-    console.log('[Debug] User info from stored procedure:', userInfo[0][0]);
+    console.log('[Debug] Raw user info from stored procedure:', userInfo);
+    console.log('[Debug] First result set:', userInfo[0]);
+    console.log('[Debug] First row:', userInfo[0]?.[0]);
 
     if (!userInfo || !userInfo[0] || userInfo[0].length === 0) {
       console.log('[Debug] User not found - returning 404');
@@ -62,15 +65,19 @@ export async function GET(request: Request) {
     }
 
     const userData = userInfo[0][0];
+    console.log('[Debug] User data:', userData);
+    console.log('[Debug] User type:', userData.user_type);
     
     // Check if user is a counselor
     if (userData.user_type !== 'Counselor') {
       console.log('[Debug] User is not a counselor - returning 403');
+      console.log('[Debug] Expected type: Counselor, Got:', userData.user_type);
       return NextResponse.json({ 
         error: 'User is not a counselor',
         details: { 
           user_id: decoded.id,
-          user_type: userData.user_type
+          user_type: userData.user_type,
+          expected_type: 'Counselor'
         }
       }, { status: 403 });
     }
