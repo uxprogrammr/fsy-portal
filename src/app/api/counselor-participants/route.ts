@@ -8,6 +8,11 @@ export async function GET(request: Request) {
   try {
     console.log('[Debug] Starting counselor-participants GET request');
     
+    // Log all cookies for debugging
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    console.log('[Debug] All cookies present:', allCookies.map(c => c.name));
+    
     const isAuth = await isAuthenticated();
     console.log('[Debug] Authentication check result:', isAuth);
     
@@ -17,9 +22,11 @@ export async function GET(request: Request) {
     }
 
     // Get the counselor's fsy_id from the session
-    const cookieStore = await cookies();
     const session = cookieStore.get('session');
     console.log('[Debug] Session cookie present:', !!session);
+    if (session) {
+      console.log('[Debug] Session cookie name:', session.name);
+    }
     
     if (!session) {
       console.log('[Debug] No session cookie found - returning 401');
