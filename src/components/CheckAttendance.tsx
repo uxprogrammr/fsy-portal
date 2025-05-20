@@ -81,8 +81,8 @@ const CheckAttendance = () => {
   const stats = {
     present: participants.filter(p => p.attendance_status === 'Present').length,
     absent: participants.filter(p => p.attendance_status === 'Absent').length,
-    excused: participants.filter(p => p.attendance_status === 'Excused').length,
-    notSet: participants.filter(p => !['Present', 'Absent', 'Excused'].includes(p.attendance_status)).length,
+    excused: participants.filter(p => p.attendance_status === 'Late').length,
+    notSet: participants.filter(p => !['Present', 'Absent', 'Late'].includes(p.attendance_status)).length,
   };
 
   const fetchParticipants = async (eventId: number, companyId: number, groupId: number) => {
@@ -233,7 +233,7 @@ const CheckAttendance = () => {
         return <CheckCircleOutlineIcon sx={{ color: 'success.main' }} />;
       case 'Absent':
         return <CancelOutlinedIcon sx={{ color: 'error.main' }} />;
-      case 'Excused':
+      case 'Late':
         return <BlockOutlinedIcon sx={{ color: 'warning.main' }} />;
       default:
         return <AddCircleOutlineIcon sx={{ color: 'text.secondary' }} />;
@@ -247,8 +247,8 @@ const CheckAttendance = () => {
       case 'Present':
         return 'Absent';
       case 'Absent':
-        return 'Excused';
-      case 'Excused':
+        return 'Late';
+      case 'Late':
         return 'Not Set';
       default:
         return 'Not Set';
@@ -577,7 +577,7 @@ const CheckAttendance = () => {
             </Box>
             <Box>
               <Typography variant="h6" color="warning.main">{stats.excused}</Typography>
-              <Typography variant="body2">Excused</Typography>
+              <Typography variant="body2">Late</Typography>
             </Box>
             <Box>
               <Typography variant="h6" color="text.secondary">{stats.notSet}</Typography>
