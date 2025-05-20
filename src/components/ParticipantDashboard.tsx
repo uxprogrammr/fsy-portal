@@ -17,6 +17,7 @@ interface UserInfo {
   group_name: string;
   stake_name: string;
   unit_name: string;
+  room_name: string;
 }
 
 interface DailyEvent {
@@ -412,6 +413,18 @@ const ParticipantDashboard = () => {
             </Typography>
             <Typography color="text.secondary" sx={{ textAlign: 'right' }}>
               {userInfo?.group_name || 'No Group'}
+            </Typography>
+          </Box>
+
+          {/* Room Name */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'flex-end',
+            mb: 0.5,
+            mt: 0
+          }}>
+            <Typography color="text.secondary" sx={{ textAlign: 'right' }}>
+              {userInfo?.room_name || 'No Room'}
             </Typography>
           </Box>
 

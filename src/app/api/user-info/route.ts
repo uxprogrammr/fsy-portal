@@ -81,6 +81,7 @@ export async function GET(request: Request) {
       total_participant: userInfo.total_participant,
       stake_name: userInfo.stake_name,
       unit_name: userInfo.unit_name,
+      room_name: userInfo.room_name,
       venue: userInfo.venue
     };
     

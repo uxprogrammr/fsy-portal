@@ -16,6 +16,7 @@ interface UserInfo {
   full_name: string;
   company_name: string;
   group_name: string;
+  room_name: string;
 }
 
 const Profile = () => {
@@ -147,7 +148,7 @@ const Profile = () => {
         severity: 'success'
       });
 
-      // Wait for 1.5 seconds to show the success message before redirecting
+      // Only redirect to dashboard after a successful update
       setTimeout(() => {
         router.push('/dashboard');
       }, 1500);
@@ -161,6 +162,10 @@ const Profile = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    router.back();
   };
 
   // Don't render form until client-side hydration is complete
@@ -194,7 +199,7 @@ const Profile = () => {
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <IconButton 
-              onClick={() => router.back()}
+              onClick={handleBack}
               sx={{ color: 'white' }}
             >
               <ArrowBackIcon />
@@ -276,6 +281,19 @@ const Profile = () => {
                 fullWidth
                 disabled
                 value={userInfo?.group_name || ''}
+                sx={{ bgcolor: '#F5F5F5' }}
+                inputProps={{ autoComplete: 'organization' }}
+              />
+            </Box>
+
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                Room
+              </Typography>
+              <TextField
+                fullWidth
+                disabled
+                value={userInfo?.room_name || ''}
                 sx={{ bgcolor: '#F5F5F5' }}
                 inputProps={{ autoComplete: 'organization' }}
               />

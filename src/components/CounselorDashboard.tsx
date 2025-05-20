@@ -24,6 +24,7 @@ interface UserInfo {
   total_counselor: number;
   total_participant: number;
   group_id?: number;
+  room_name: string;
 }
 
 interface Event {
@@ -362,6 +363,17 @@ const CounselorDashboard = () => {
                   {userInfo?.group_name || 'No Group'}
                 </Typography>
               </Box>
+            </Box>
+
+            {/* Room Name */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'flex-end',
+              mb: 2
+            }}>
+              <Typography color="text.secondary" sx={{ textAlign: 'right' }}>
+                {userInfo?.room_name || 'No Room'}
+              </Typography>
             </Box>
           </Box>
 
