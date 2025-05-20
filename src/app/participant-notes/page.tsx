@@ -99,6 +99,37 @@ export default function ParticipantNotesPage() {
     }
   };
 
+  const handleEditFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload file');
+      }
+
+      const data = await response.json();
+      setNoteToEdit(prev => prev ? { ...prev, photo_url: data.url } : null);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleAddNote = async () => {
     if (!selectedParticipant) return;
     if (!newNote.note_type || !newNote.category || !newNote.severity || !newNote.message) {
@@ -146,6 +177,25 @@ export default function ParticipantNotesPage() {
     if (!noteToDelete) return;
 
     try {
+      // Find the note to get its photo URL
+      const noteToDeleteData = notes.find(note => note.note_id === noteToDelete);
+      if (!noteToDeleteData) {
+        throw new Error('Note not found');
+      }
+
+      // If the note has a photo, delete it from Firebase Storage
+      if (noteToDeleteData.photo_url) {
+        const deletePhotoResponse = await fetch(`/api/upload?url=${encodeURIComponent(noteToDeleteData.photo_url)}`, {
+          method: 'DELETE',
+        });
+
+        if (!deletePhotoResponse.ok) {
+          console.error('Failed to delete photo from storage');
+          // Continue with note deletion even if photo deletion fails
+        }
+      }
+
+      // Delete the note from the database
       const response = await fetch(`/api/participant-notes?noteId=${noteToDelete}`, {
         method: 'DELETE',
       });
@@ -432,7 +482,7 @@ export default function ParticipantNotesPage() {
                   </button>
                   <button
                     onClick={handleAddNote}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isUploading}
                   >
                     Save Note
@@ -620,7 +670,7 @@ export default function ParticipantNotesPage() {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleFileUpload}
+                    onChange={handleEditFileUpload}
                     className="w-full p-2 border rounded-md"
                     disabled={isUploading}
                   />
@@ -652,7 +702,12 @@ export default function ParticipantNotesPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleUpdateNote} color="primary" variant="contained">
+          <Button 
+            onClick={handleUpdateNote} 
+            color="primary" 
+            variant="contained"
+            disabled={isUploading}
+          >
             Save Changes
           </Button>
         </DialogActions>

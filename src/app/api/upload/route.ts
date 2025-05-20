@@ -1,20 +1,66 @@
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { initializeApp } from 'firebase/app';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { isAuthenticated } from '@/lib/auth';
+import { query } from '@/lib/db';
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCRr2xIVUEWSLTV2pXGHlZmX7x4V8P6TYg",
+  authDomain: "fsy-app.firebaseapp.com",
+  projectId: "fsy-app",
+  storageBucket: "fsy-app.firebasestorage.app",
+  messagingSenderId: "313919480653",
+  appId: "1:313919480653:web:6aaf2e74c6414986ef4d04",
+  measurementId: "G-67WB30Z9M6"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+
+// Helper function to extract filename from URL
+function getFilenameFromUrl(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    // Remove the leading '/v0/b/' and everything after '?'
+    const path = pathname.split('/v0/b/')[1]?.split('?')[0] || '';
+    // Decode the URL-encoded path
+    const decodedPath = decodeURIComponent(path);
+    // Get the filename from the path
+    const filename = decodedPath.split('/').pop();
+    return filename || null;
+  } catch (error) {
+    console.error('Error parsing URL:', error);
+    return null;
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    const isAuth = await isAuthenticated();
-    if (!isAuth) {
+    // Check authentication
+    const session = await isAuthenticated();
+    if (!session || typeof session === 'boolean') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get user type from database
+    const userRows = await query(
+      'SELECT user_type FROM users WHERE user_id = ?',
+      [session.userId]
+    ) as any[];
+
+    const userType = userRows[0]?.user_type;
+    if (!userType || userType !== 'Counselor') {
+      return NextResponse.json({ error: 'Only counselors can upload photos' }, { status: 403 });
     }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
     
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     // Validate file type
@@ -22,23 +68,67 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
     }
 
-    // Create unique filename
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    const filename = `${uniqueSuffix}-${file.name}`;
-    
-    // Save to public/uploads directory
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
-    const filepath = join(uploadDir, filename);
-    await writeFile(filepath, buffer);
+    // Create a unique filename
+    const timestamp = Date.now();
+    const filename = `${timestamp}_${file.name}`;
+    const storageRef = ref(storage, `notes/${filename}`);
 
-    // Return the URL path to the uploaded file
-    return NextResponse.json({ 
-      url: `/uploads/${filename}` 
-    });
+    // Convert File to ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    // Upload file to Firebase Storage
+    await uploadBytes(storageRef, uint8Array);
+
+    // Get the download URL
+    const downloadURL = await getDownloadURL(storageRef);
+
+    return NextResponse.json({ url: downloadURL });
   } catch (error) {
     console.error('Error uploading file:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    // Check authentication
+    const session = await isAuthenticated();
+    if (!session || typeof session === 'boolean') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get user type from database
+    const userRows = await query(
+      'SELECT user_type FROM users WHERE user_id = ?',
+      [session.userId]
+    ) as any[];
+
+    const userType = userRows[0]?.user_type;
+    if (!userType || userType !== 'Counselor') {
+      return NextResponse.json({ error: 'Only counselors can delete photos' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const photoUrl = searchParams.get('url');
+
+    if (!photoUrl) {
+      return NextResponse.json({ error: 'No photo URL provided' }, { status: 400 });
+    }
+
+    // Extract filename from URL
+    const filename = getFilenameFromUrl(photoUrl);
+    if (!filename) {
+      return NextResponse.json({ error: 'Invalid photo URL' }, { status: 400 });
+    }
+
+    // Delete file from Firebase Storage
+    const storageRef = ref(storage, `notes/${filename}`);
+    await deleteObject(storageRef);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    return NextResponse.json({ error: 'Failed to delete file' }, { status: 500 });
   }
 } 
