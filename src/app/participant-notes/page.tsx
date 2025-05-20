@@ -45,7 +45,9 @@ export default function ParticipantNotesPage() {
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        const response = await fetch('/api/counselor-participants');
+        const response = await fetch('/api/counselor-participants', {
+          credentials: 'include'
+        });
         if (!response.ok) throw new Error('Failed to fetch participants');
         const data = await response.json();
         setParticipants(data);
@@ -59,7 +61,9 @@ export default function ParticipantNotesPage() {
 
   const fetchNotes = async (participantId: number) => {
     try {
-      const response = await fetch(`/api/participant-notes?participantId=${participantId}`);
+      const response = await fetch(`/api/participant-notes?participantId=${participantId}`, {
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to fetch notes');
       const data = await response.json();
       setNotes(data);

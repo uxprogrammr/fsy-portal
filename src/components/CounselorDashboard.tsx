@@ -124,7 +124,9 @@ const CounselorDashboard = () => {
 
   const fetchUserInfo = async (userId: number) => {
     try {
-      const response = await fetch(`/api/user-info?userId=${userId}`);
+      const response = await fetch(`/api/user-info?userId=${userId}`, {
+        credentials: 'include'
+      });
       const data = await response.json();
       
       if (!response.ok) {
@@ -141,7 +143,9 @@ const CounselorDashboard = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('/api/events');
+      const response = await fetch('/api/events', {
+        credentials: 'include'
+      });
       const data = await response.json();
       
       if (!response.ok) {
