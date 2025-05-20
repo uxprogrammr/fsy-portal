@@ -54,6 +54,27 @@ export async function GET(request: Request) {
 
     console.log('[Debug] Direct user check result:', directUserCheck);
 
+    if (!directUserCheck || directUserCheck.length === 0) {
+      console.log('[Debug] User not found in direct check - returning 404');
+      return NextResponse.json({ 
+        error: 'User not found',
+        details: { user_id: decoded.id }
+      }, { status: 404 });
+    }
+
+    // Check user type from direct query first
+    if (directUserCheck[0].user_type !== 'Counselor') {
+      console.log('[Debug] User is not a counselor (direct check) - returning 403');
+      return NextResponse.json({ 
+        error: 'User is not a counselor',
+        details: { 
+          user_id: decoded.id,
+          user_type: directUserCheck[0].user_type,
+          expected_type: 'Counselor'
+        }
+      }, { status: 403 });
+    }
+
     // Get user's company and group information using the stored procedure
     console.log('[Debug] Getting user company and group info for user_id:', decoded.id);
     const userInfo = await query(
@@ -66,38 +87,15 @@ export async function GET(request: Request) {
     console.log('[Debug] First row:', JSON.stringify(userInfo[0]?.[0], null, 2));
 
     if (!userInfo || !userInfo[0] || userInfo[0].length === 0) {
-      console.log('[Debug] User not found - returning 404');
+      console.log('[Debug] User not found in stored procedure - returning 404');
       return NextResponse.json({ 
-        error: 'User not found',
+        error: 'User not found in stored procedure',
         details: { user_id: decoded.id }
       }, { status: 404 });
     }
 
     const userData = userInfo[0][0];
     console.log('[Debug] User data:', JSON.stringify(userData, null, 2));
-    console.log('[Debug] User type:', userData.user_type);
-    console.log('[Debug] User type comparison:', {
-      actual: userData.user_type,
-      expected: 'Counselor',
-      isEqual: userData.user_type === 'Counselor',
-      actualLength: userData.user_type?.length,
-      expectedLength: 'Counselor'.length
-    });
-    
-    // Check if user is a counselor
-    if (userData.user_type !== 'Counselor') {
-      console.log('[Debug] User is not a counselor - returning 403');
-      console.log('[Debug] Expected type: Counselor, Got:', userData.user_type);
-      return NextResponse.json({ 
-        error: 'User is not a counselor',
-        details: { 
-          user_id: decoded.id,
-          user_type: userData.user_type,
-          expected_type: 'Counselor',
-          direct_check: directUserCheck[0]?.user_type
-        }
-      }, { status: 403 });
-    }
 
     // Check if user has company and group assignment
     if (!userData.company_id || !userData.group_id) {
