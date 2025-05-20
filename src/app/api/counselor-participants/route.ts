@@ -3,6 +3,9 @@ import { query } from '@/lib/db';
 import { isAuthenticated } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { RowDataPacket } from 'mysql2';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret';
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     // Get the counselor's fsy_id from the session
-    const session = cookieStore.get('session');
+    const session = cookieStore.get('session_token');
     console.log('[Debug] Session cookie present:', !!session);
     if (session) {
       console.log('[Debug] Session cookie name:', session.name);
@@ -33,15 +36,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userData = JSON.parse(session.value);
-    console.log('[Debug] User data from session:', { id: userData.id, type: userData.type });
+    // Get user data from JWT token
+    const decoded = jwt.verify(session.value, JWT_SECRET) as { id: number };
+    console.log('[Debug] JWT decoded:', decoded);
 
     // First get the counselor's company and group information
     const counselorInfo = await query(
       `SELECT cm.company_id, cm.group_id 
        FROM company_members cm
        WHERE cm.fsy_id = ?`,
-      [userData.id]
+      [decoded.id]
     ) as RowDataPacket[];
 
     console.log('[Debug] Counselor info query result:', counselorInfo);
