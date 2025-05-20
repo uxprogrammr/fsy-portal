@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge, Switch, FormControlLabel, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { Box, Typography, Button, Container, Paper, IconButton, useTheme, useMediaQuery, Grid, Badge, Switch, FormControlLabel, CircularProgress, Snackbar, Alert, Menu, MenuItem } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import QrCodeIcon from '@mui/icons-material/QrCode';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Fab from '@mui/material/Fab';
 import { useRouter } from 'next/navigation';
 import { getCurrentDateTimeInPH, formatDateTimeInPH } from '../utils/dateTimeUtils';
@@ -49,6 +50,7 @@ const CounselorDashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [currentDateTime, setCurrentDateTime] = useState<Date>(getCurrentDateTimeInPH());
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -224,6 +226,29 @@ const CounselorDashboard = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleMenuItemClick = (action: string) => {
+    handleMenuClose();
+    switch (action) {
+      case 'notes':
+        router.push('/participant-notes');
+        break;
+      case 'photos':
+        router.push('/event-photos');
+        break;
+      case 'announcements':
+        router.push('/announcements');
+        break;
+    }
   };
 
   if (isChecking || isLoading) {
@@ -424,24 +449,62 @@ const CounselorDashboard = () => {
             </Paper>
           </Box>
 
-          {/* Check Attendance Button */}
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={() => router.push('/check-attendance')}
-            sx={{
-              bgcolor: '#006D91',
-              color: 'white',
-              py: { xs: 1.5, sm: 2 },
-              mb: { xs: 3, sm: 4 },
-              fontSize: { xs: '0.9rem', sm: '1rem' },
-              '&:hover': {
-                bgcolor: '#005d7a'
-              }
-            }}
-          >
-            Check Attendance
-          </Button>
+          {/* Check Attendance Button and Menu */}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            mb: { xs: 3, sm: 4 }
+          }}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => router.push('/check-attendance')}
+              sx={{
+                bgcolor: '#006D91',
+                color: 'white',
+                py: { xs: 1.5, sm: 2 },
+                fontSize: { xs: '0.9rem', sm: '1rem' },
+                '&:hover': {
+                  bgcolor: '#005d7a'
+                }
+              }}
+            >
+              Check Attendance
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleMenuClick}
+              sx={{
+                bgcolor: '#006D91',
+                color: 'white',
+                py: { xs: 1.5, sm: 2 },
+                px: { xs: 1.5, sm: 2 },
+                minWidth: { xs: '48px', sm: '56px' },
+                '&:hover': {
+                  bgcolor: '#005d7a'
+                }
+              }}
+            >
+              <ArrowDropDownIcon />
+            </Button>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+            >
+              <MenuItem onClick={() => handleMenuItemClick('notes')}>Participant Notes</MenuItem>
+              <MenuItem onClick={() => handleMenuItemClick('photos')}>Event Photos</MenuItem>
+              <MenuItem onClick={() => handleMenuItemClick('announcements')}>Announcements</MenuItem>
+            </Menu>
+          </Box>
 
           {/* Events Section */}
           <Box sx={{ mb: { xs: 13, sm: 14 } }}>
