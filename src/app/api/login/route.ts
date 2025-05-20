@@ -2,12 +2,12 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
-import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
 interface LoginRequest {
   username: string;
   password: string;
-  rememberMe?: boolean;
+  rememberMe: boolean;
 }
 
 interface User {
@@ -19,11 +19,7 @@ interface User {
   birthDate: string;
 }
 
-interface LoginResponse {
-  success: boolean;
-  user?: User;
-  error?: string;
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret';
 
 export async function POST(request: Request) {
   try {
@@ -76,25 +72,30 @@ export async function POST(request: Request) {
       birthDate: user.birth_date
     };
 
+    // Create JWT token
+    const token = jwt.sign({ id: user.user_id }, JWT_SECRET, {
+      expiresIn: rememberMe ? '7d' : '24h'
+    });
+
     // Create the response with the cookie
     const response = NextResponse.json({
       success: true,
       user: userData
     });
 
-    // Set session cookie with appropriate expiration
-    response.cookies.set('session', JSON.stringify(userData), {
+    // Set the session cookie
+    response.cookies.set('session_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60 // 30 days if remember me, 1 day if not
+      sameSite: 'lax',
+      maxAge: rememberMe ? 7 * 24 * 60 * 60 : 24 * 60 * 60 // 7 days or 24 hours
     });
 
     return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { success: false, error: 'An error occurred during login' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
