@@ -7,9 +7,13 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: Request) {
   try {
     console.log('[Debug] Starting counselor-participants GET request');
+    console.log('[Debug] Request URL:', request.url);
     
     // Log all cookies for debugging
     const cookieStore = await cookies();
