@@ -11,6 +11,9 @@ interface MemberInfo extends RowDataPacket {
   stake_name: string;
   unit_name: string;
   participant_type: string;
+  company_name: string;
+  group_name: string;
+  room_name: string;
 }
 
 export async function GET(request: Request) {

@@ -16,6 +16,9 @@ interface MemberInfo {
   stake_name: string;
   unit_name: string;
   participant_type: string;
+  company_name: string;
+  group_name: string;
+  room_name: string;
 }
 
 export default function MemberDetails() {
@@ -144,6 +147,9 @@ export default function MemberDetails() {
           <DetailItem label="Email" value={memberInfo.email} />
           <DetailItem label="Stake Name" value={memberInfo.stake_name} />
           <DetailItem label="Unit Name" value={memberInfo.unit_name} />
+          <DetailItem label="Company Name" value={memberInfo.company_name} />
+          <DetailItem label="Group Name" value={memberInfo.group_name} />
+          <DetailItem label="Room Name" value={memberInfo.room_name} />
         </Box>
       </Box>
     </Box>
