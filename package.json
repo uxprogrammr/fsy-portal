@@ -17,6 +17,7 @@
     "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
     "firebase": "^11.7.3",
+    "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.511.0",
     "mysql2": "^3.14.0",

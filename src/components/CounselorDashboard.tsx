@@ -612,6 +612,7 @@ const CounselorDashboard = () => {
       <Fab 
         color="primary" 
         aria-label="qr-code"
+        onClick={() => router.push('/qr-scanner')}
         sx={{
           position: 'fixed',
           bottom: { xs: 16, sm: 32 },
