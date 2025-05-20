@@ -45,6 +45,15 @@ export async function GET(request: Request) {
     const decoded = jwt.verify(session.value, JWT_SECRET) as { id: number };
     console.log('[Debug] JWT decoded:', decoded);
 
+    // First check user type directly from users table
+    console.log('[Debug] Checking user type directly from users table');
+    const directUserCheck = await query(
+      'SELECT user_id, user_type FROM users WHERE user_id = ?',
+      [decoded.id]
+    ) as RowDataPacket[];
+
+    console.log('[Debug] Direct user check result:', directUserCheck);
+
     // Get user's company and group information using the stored procedure
     console.log('[Debug] Getting user company and group info for user_id:', decoded.id);
     const userInfo = await query(
@@ -52,9 +61,9 @@ export async function GET(request: Request) {
       [decoded.id]
     ) as RowDataPacket[][];
 
-    console.log('[Debug] Raw user info from stored procedure:', userInfo);
-    console.log('[Debug] First result set:', userInfo[0]);
-    console.log('[Debug] First row:', userInfo[0]?.[0]);
+    console.log('[Debug] Raw user info from stored procedure:', JSON.stringify(userInfo, null, 2));
+    console.log('[Debug] First result set:', JSON.stringify(userInfo[0], null, 2));
+    console.log('[Debug] First row:', JSON.stringify(userInfo[0]?.[0], null, 2));
 
     if (!userInfo || !userInfo[0] || userInfo[0].length === 0) {
       console.log('[Debug] User not found - returning 404');
@@ -65,8 +74,15 @@ export async function GET(request: Request) {
     }
 
     const userData = userInfo[0][0];
-    console.log('[Debug] User data:', userData);
+    console.log('[Debug] User data:', JSON.stringify(userData, null, 2));
     console.log('[Debug] User type:', userData.user_type);
+    console.log('[Debug] User type comparison:', {
+      actual: userData.user_type,
+      expected: 'Counselor',
+      isEqual: userData.user_type === 'Counselor',
+      actualLength: userData.user_type?.length,
+      expectedLength: 'Counselor'.length
+    });
     
     // Check if user is a counselor
     if (userData.user_type !== 'Counselor') {
@@ -77,7 +93,8 @@ export async function GET(request: Request) {
         details: { 
           user_id: decoded.id,
           user_type: userData.user_type,
-          expected_type: 'Counselor'
+          expected_type: 'Counselor',
+          direct_check: directUserCheck[0]?.user_type
         }
       }, { status: 403 });
     }
