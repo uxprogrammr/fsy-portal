@@ -10,44 +10,54 @@ const pool = mysql.createPool({
     database: isProduction ? process.env.MYSQL_DATABASE : "fsy2025",
     port: isProduction ? Number(process.env.MYSQL_PORT) : 3306,
     waitForConnections: true,
-    connectionLimit: 20, // Increased from 5 to handle more concurrent connections
-    queueLimit: 10, // Increased from 3 to handle more queued requests
+    connectionLimit: 10, // Reduced from 20 to prevent connection exhaustion
+    queueLimit: 5, // Reduced from 10 to prevent queue buildup
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000,
-    idleTimeout: 60000, // Close idle connections after 60 seconds
-    maxIdle: 10, // Maximum number of idle connections to keep
+    idleTimeout: 30000, // Reduced from 60000 to close idle connections faster
+    maxIdle: 5, // Reduced from 10 to maintain fewer idle connections
 });
 
 // Simple query function that ensures connections are always released
 export async function query(sql: string, params: any[] = []) {
     let connection;
-    try {
-        connection = await pool.getConnection();
-        const [results] = await connection.execute(sql, params);
-        return results;
-    } catch (error: any) {
-        console.error("Database query error:", error);
-        // If it's a connection error, try to reconnect
-        if (error.code === 'ER_CON_COUNT_ERROR' || error.code === 'PROTOCOL_CONNECTION_LOST') {
-            console.log('Connection error detected, attempting to reconnect...');
-            // Wait a bit before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            try {
-                connection = await pool.getConnection();
-                const [results] = await connection.execute(sql, params);
-                return results;
-            } catch (retryError) {
-                console.error("Retry failed:", retryError);
-                throw retryError;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries) {
+        try {
+            connection = await pool.getConnection();
+            const [results] = await connection.execute(sql, params);
+            return results;
+        } catch (error: any) {
+            console.error("Database query error:", error);
+            
+            if (connection) {
+                try {
+                    connection.release();
+                } catch (releaseError) {
+                    console.error("Error releasing connection:", releaseError);
+                }
             }
-        }
-        throw error;
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (releaseError) {
-                console.error("Error releasing connection:", releaseError);
+            
+            // If it's a connection error and we haven't exceeded max retries
+            if ((error.code === 'ER_CON_COUNT_ERROR' || error.code === 'PROTOCOL_CONNECTION_LOST') 
+                && retryCount < maxRetries) {
+                console.log(`Connection error detected, retry attempt ${retryCount + 1}/${maxRetries}...`);
+                retryCount++;
+                // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+                continue;
+            }
+            
+            throw error;
+        } finally {
+            if (connection) {
+                try {
+                    connection.release();
+                } catch (releaseError) {
+                    console.error("Error releasing connection:", releaseError);
+                }
             }
         }
     }
