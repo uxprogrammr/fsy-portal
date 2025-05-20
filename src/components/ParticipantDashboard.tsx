@@ -416,18 +416,6 @@ const ParticipantDashboard = () => {
             </Typography>
           </Box>
 
-          {/* Room Name */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'flex-end',
-            mb: 0.5,
-            mt: 0
-          }}>
-            <Typography color="text.secondary" sx={{ textAlign: 'right' }}>
-              {userInfo?.room_name || 'No Room'}
-            </Typography>
-          </Box>
-
           {/* Current Event or Next Event Section */}
           <Box sx={{ 
             p: 1.5,

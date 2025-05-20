@@ -364,17 +364,6 @@ const CounselorDashboard = () => {
                 </Typography>
               </Box>
             </Box>
-
-            {/* Room Name */}
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'flex-end',
-              mb: 2
-            }}>
-              <Typography color="text.secondary" sx={{ textAlign: 'right' }}>
-                {userInfo?.room_name || 'No Room'}
-              </Typography>
-            </Box>
           </Box>
 
           {/* Stats */}
