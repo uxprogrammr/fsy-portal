@@ -6,13 +6,13 @@ import { query } from '@/lib/db';
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCRr2xIVUEWSLTV2pXGHlZmX7x4V8P6TYg",
-  authDomain: "fsy-app.firebaseapp.com",
-  projectId: "fsy-app",
-  storageBucket: "fsy-app.firebasestorage.app",
-  messagingSenderId: "313919480653",
-  appId: "1:313919480653:web:6aaf2e74c6414986ef4d04",
-  measurementId: "G-67WB30Z9M6"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
