@@ -55,10 +55,10 @@ export async function GET(request: Request) {
       FROM registrations r
       LEFT JOIN attendances a ON r.fsy_id = a.fsy_id 
         AND a.event_id = ?
-      WHERE 
-        LOWER(r.first_name) LIKE LOWER(?)
+      WHERE status='Approved' AND 
+        (LOWER(r.first_name) LIKE LOWER(?)
         OR LOWER(r.last_name) LIKE LOWER(?)
-        OR LOWER(CONCAT(r.first_name, ' ', r.last_name)) LIKE LOWER(?)
+        OR LOWER(CONCAT(r.first_name, ' ', r.last_name)) LIKE LOWER(?))
       ORDER BY r.first_name, r.last_name
       LIMIT 10`,
       [
