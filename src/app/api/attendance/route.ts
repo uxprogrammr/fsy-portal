@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     // Check if participant exists
     const [participantCheck] = await query(
-      'SELECT * FROM registrations WHERE fsy_id = ?',
+      'SELECT * FROM registrations WHERE fsy_id = ? AND status = "Approved"',
       [fsy_id]
     ) as RowDataPacket[];
 
