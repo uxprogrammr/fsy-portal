@@ -216,7 +216,7 @@ const QRScanner = () => {
       console.error('Error adding attendance:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to record attendance',
+        message: 'Failed to record attendance. Please check if registration status is approved.',
         severity: 'error'
       });
     } finally {
