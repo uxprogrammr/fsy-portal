@@ -12,6 +12,8 @@ interface DailyEvent extends RowDataPacket {
   description: string | null;
   attendance_required: string;
   created_at: string;
+  participant_dress_attire: string | null;
+  counselor_dress_attire: string | null;
 }
 
 // In-memory cache for events

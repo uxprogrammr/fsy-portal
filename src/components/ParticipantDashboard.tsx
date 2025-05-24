@@ -27,6 +27,7 @@ interface DailyEvent {
   end_time: string;
   day_number: number;
   venue: string | null;
+  participant_dress_attire?: string | null;
 }
 
 const ParticipantDashboard = () => {
@@ -599,12 +600,19 @@ const ParticipantDashboard = () => {
             }}>
               Upcoming Events
             </Typography>
-            <Typography sx={{ 
-              fontSize: '14px',
-              color: '#0F172A'
-            }}>
-              Day {currentEvent?.day_number || nextEvent?.day_number ||  1}
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <Typography sx={{ fontSize: '14px', color: '#0F172A' }}>
+                {currentEvent?.day_number || nextEvent?.day_number || 1 ? `Day ${currentEvent?.day_number || nextEvent?.day_number || 1}` : ''}
+              </Typography>
+              {(() => {
+                const attire = currentEvent?.participant_dress_attire || nextEvent?.participant_dress_attire;
+                return attire ? (
+                  <Typography sx={{ fontSize: '12px', color: '#666', mt: '-4px', textAlign: 'right' }}>
+                    {attire}
+                  </Typography>
+                ) : null;
+              })()}
+            </Box>
           </Box>
 
           {/* Events List */}

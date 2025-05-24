@@ -37,6 +37,7 @@ interface Event {
   description: string | null;
   attendance_required: string;
   status: 'past' | 'ongoing' | 'upcoming';
+  counselor_dress_attire?: string | null;
 }
 
 const CounselorDashboard = () => {
@@ -548,8 +549,16 @@ const CounselorDashboard = () => {
                 color="text.secondary"
                 sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
               >
-                Day {events.length > 0 ? events[0].day_number : 1}
+                {events.length > 0 ? `Day ${events[0].day_number}` : 'Day 1'}
               </Typography>
+              {(() => {
+                const attire = events.length > 0 ? events[0].counselor_dress_attire : null;
+                return attire ? (
+                  <Typography sx={{ fontSize: '12px', color: '#666', mt: '-4px', textAlign: 'right' }}>
+                    {attire}
+                  </Typography>
+                ) : null;
+              })()}
             </Box>
 
             {filteredEvents.map((event) => (
