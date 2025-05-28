@@ -1,11 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, IconButton, Avatar, CircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Avatar, CircularProgress, Button } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
+import DownloadIcon from '@mui/icons-material/Download';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ref, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/firebase';
 
 interface MemberInfo {
   fsy_id: number;
@@ -26,9 +29,28 @@ export default function MemberDetails() {
   const params = useSearchParams();
   const [memberInfo, setMemberInfo] = React.useState<MemberInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [downloading, setDownloading] = React.useState(false);
 
   const handleHomeClick = () => {
     router.push('/dashboard');
+  };
+
+  const handleDownloadCertificate = async () => {
+    if (!memberInfo) return;
+    try {
+      setDownloading(true);
+      const certificateName = `${memberInfo.first_name} ${memberInfo.last_name}`;
+      const certificateRef = ref(storage, `certificates/${certificateName}.pdf`);
+      const downloadURL = await getDownloadURL(certificateRef);
+
+      // Open the file in a new tab to avoid white screen and allow download
+      window.open(downloadURL, '_blank');
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      alert('Failed to download certificate. Please try again later.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -136,6 +158,24 @@ export default function MemberDetails() {
         <Typography variant="body2" color="text.secondary">
           {memberInfo.participant_type}
         </Typography>
+      </Box>
+
+      {/* Download Certificate Button */}
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
+        <Button
+          variant="contained"
+          startIcon={<DownloadIcon />}
+          onClick={handleDownloadCertificate}
+          disabled={downloading}
+          sx={{
+            bgcolor: '#00BCD4',
+            '&:hover': {
+              bgcolor: '#0097A7'
+            }
+          }}
+        >
+          {downloading ? 'Downloading...' : 'Download Certificate'}
+        </Button>
       </Box>
 
       {/* Details Section */}
